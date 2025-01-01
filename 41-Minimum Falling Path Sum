@@ -1,0 +1,178 @@
+//Bruteforce Approach
+
+class Solution {
+    public int minFallingPathSum(int[][] matrix) {
+        int m = matrix.length, n = matrix[0].length, minPathSum = Integer.MAX_VALUE;
+
+        // Iterate through each column of the first row to start the falling path.
+        for (int col = 0; col < matrix.length; col++) {
+            // Calculate the minimum falling path sum starting from each element in the first row.
+            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col, m, n));
+        }
+
+        return minPathSum;
+    }
+
+    private int minFallingPathSum(int[][] matrix, int row, int col, int m, int n) {
+        // Base case: if we've reached the last row, return the value of the current cell.
+        if (row == m - 1) {
+            return matrix[row][col];
+        }
+
+        // Calculate the minimum falling path sum by moving straight down.
+        int straightDown = minFallingPathSum(matrix, row + 1, col, m, n);
+        
+        // Calculate the minimum falling path sum by moving diagonally left (if within bounds).
+        int diagonalLeft = Integer.MAX_VALUE;
+        if (col > 0) {
+            diagonalLeft = minFallingPathSum(matrix, row + 1, col - 1, m, n);
+        }
+        
+        // Calculate the minimum falling path sum by moving diagonally right (if within bounds).
+        int diagonalRight = Integer.MAX_VALUE;
+        if (col < n - 1) {
+            diagonalRight = minFallingPathSum(matrix, row + 1, col + 1, m, n);
+        }
+        
+        // Return the value of the current cell + the minimum of the three possible falling paths.
+        return matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int minFallingPathSum(int[][] matrix) {
+        int m = matrix.length, n = matrix[0].length, minPathSum = Integer.MAX_VALUE;
+
+        cache = new int[m][n];
+        intializeCache();
+
+        for (int col = 0; col < matrix.length; col++) {
+            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col, m, n));
+        }
+
+        return minPathSum;
+    }
+
+    private int minFallingPathSum(int[][] matrix, int row, int col, int m, int n) {
+        if (row == m - 1) {
+            return matrix[row][col];
+        }
+
+        if (cache[row][col] != -1) {
+            return cache[row][col];
+        }
+
+        int straightDown = minFallingPathSum(matrix, row + 1, col, m, n);
+
+        int diagonalLeft = Integer.MAX_VALUE;
+        if (col > 0) {
+            diagonalLeft = minFallingPathSum(matrix, row + 1, col - 1, m, n);
+        }
+
+        int diagonalRight = Integer.MAX_VALUE;
+        if (col < n - 1) {
+            diagonalRight = minFallingPathSum(matrix, row + 1, col + 1, m, n);
+        }
+
+        return cache[row][col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int minFallingPathSum(int[][] matrix) {
+        int m = matrix.length, n = matrix[0].length;
+
+        //dp[row][col] represents the minimum falling path sum starting from cell (row, col) to the bottom of the matrix.
+        int[][] dp = new int[m][n];
+
+        for (int col = 0; col < n; col++) {
+            dp[m - 1][col] = matrix[m - 1][col];
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            for (int col = n - 1; col >= 0; col--) {
+                int straightDown = dp[row + 1][col];
+
+                int diagonalLeft = Integer.MAX_VALUE;
+                if (col > 0) {
+                    diagonalLeft = dp[row + 1][col - 1];
+                }
+
+                int diagonalRight = Integer.MAX_VALUE;
+                if (col < n - 1) {
+                    diagonalRight = dp[row + 1][col + 1];
+                }
+
+                dp[row][col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+            }
+        }
+
+        int minPathSum = Integer.MAX_VALUE;
+
+        for (int col = 0; col < matrix.length; col++) {
+            minPathSum = Math.min(minPathSum, dp[0][col]);
+        }
+
+        return minPathSum;
+    }
+}
+
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int minFallingPathSum(int[][] matrix) {
+        int m = matrix.length, n = matrix[0].length;
+
+        int[] currentRow = new int[n];
+        int[] nextRow = new int[n];
+
+        for (int col = 0; col < n; col++) {
+            nextRow[col] = matrix[m - 1][col];
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            for (int col = n - 1; col >= 0; col--) {
+                int straightDown = nextRow[col];
+
+                int diagonalLeft = Integer.MAX_VALUE;
+                if (col > 0) {
+                    diagonalLeft = nextRow[col - 1];
+                }
+
+                int diagonalRight = Integer.MAX_VALUE;
+                if (col < n - 1) {
+                    diagonalRight = nextRow[col + 1];
+                }
+
+                currentRow[col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+            }
+
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        int minPathSum = Integer.MAX_VALUE;
+
+        for (int col = 0; col < matrix.length; col++) {
+            minPathSum = Math.min(minPathSum, nextRow[col]);
+        }
+
+        return minPathSum;
+    }
+}
