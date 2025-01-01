@@ -1,0 +1,340 @@
+/*
+Logic :
+
+Let the sum of all elements in the array be S. We want to partition the array into two subsets S1 and S2 such that their sums are equal. 
+Thus, S = S1 + S2, and since S1 = S2, we get:
+
+S = 2 × S1
+or
+S1 = S / 2
+
+Condition for Feasibility:
+- If S is odd, it's impossible to split the array into two equal subsets.
+- If S is even, check if there exists a subset with sum S / 2. This reduces to a subset sum problem.
+
+*/
+
+//Bruteforce Approach
+
+//Naive Implementation 
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int[] arr, int targetSum) {
+        List<List<Integer>> subsets = new ArrayList<>();
+        subsets.add(new ArrayList<>());
+
+        for (int i = 0; i < arr.length; i++) {
+            int size = subsets.size();
+            for (int j = 0; j < size; j++) {
+                List<Integer> currentSubset = new ArrayList<>(subsets.get(j));
+                currentSubset.add(arr[i]);
+                if (findSubsetSum(currentSubset) == targetSum) {
+                    return true;
+                }
+                subsets.add(currentSubset);
+            }
+        }
+
+        return false;
+    }
+
+    private int findSubsetSum(List<Integer> subset) {
+        int subsetSum = 0;
+        for (int val : subset) {
+            subsetSum += val;
+        }
+        return subsetSum;
+    }
+}
+
+
+//Optimal Implementation
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int[] arr, int targetSum) {
+        Set<Integer> subsetsSum = new HashSet<>();
+        subsetsSum.add(0);
+
+        for (int i = 0; i < arr.length; i++) {
+            Set<Integer> existingSubsetsSum = new HashSet<>(subsetsSum);
+            for (int subsetSum : existingSubsetsSum) {
+                int newSubsetSum = subsetSum + arr[i];
+
+                if (newSubsetSum == targetSum) {
+                    return true;
+                }
+
+                if (newSubsetSum < targetSum) {
+                    subsetsSum.add(newSubsetSum);
+                }
+            }
+        }
+
+        return false;
+    }
+}
+
+
+//Improved Approach
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int[] arr, int targetSum) {
+        int currentSubsetSum = 0;
+        int totalSubsets = 1 << arr.length; // x << y = x * 2^n
+
+        for (int num = 0; num < totalSubsets; num++) {
+            for (int i = 0; i < arr.length; i++) {
+                if ((num & (1 << i)) != 0) {
+                    currentSubsetSum += arr[i];
+
+                    if (currentSubsetSum > targetSum) {
+                        break;
+                    }
+                }
+            }
+
+            if (currentSubsetSum == targetSum) {
+                return true;
+            }
+
+            currentSubsetSum = 0;
+        }
+
+        return false;
+    }
+}
+
+
+//Good Approach
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, 0, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+        if (index == arr.length) {
+            return targetSum == 0;
+        }
+
+        if (targetSum >= arr[index] && hasSubsetWithTargetSum(arr, index + 1, targetSum - arr[index])) {
+            return true;
+        }
+
+        return hasSubsetWithTargetSum(arr, index + 1, targetSum);
+    }
+}
+
+
+//Best Approach
+
+class Solution {
+    private static int[][] cache;
+
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        cache = new int[arr.length][(arrSum / 2) + 1];
+        intializeCache();
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, 0, arrSum / 2);
+    }
+
+    private static boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+        if (index == arr.length) {
+            return targetSum == 0;
+        }
+
+        if (cache[index][targetSum] != -1) {
+            return cache[index][targetSum] == 1;
+        }
+
+        if (targetSum >= arr[index] && hasSubsetWithTargetSum(arr, index + 1, targetSum - arr[index])) {
+            cache[index][targetSum] = 1;
+            return true;
+        }
+
+        cache[index][targetSum] = hasSubsetWithTargetSum(arr, index + 1, targetSum) ? 1 : 0;
+        return cache[index][targetSum] == 1;
+    }
+
+    private static void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int arr[], int targetSum) {
+        boolean[][] dp = new boolean[arr.length + 1][targetSum + 1];
+
+        dp[arr.length][0] = true;
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            /*
+             * When attempting to partition an array into two subsets with equal sums, each
+             * element must be assigned to one of the two subsets. If any element in the
+             * array is greater than the defined target sum, it cannot be included in either
+             * subset. This is because including such an element would automatically cause
+             * that subset's sum to exceed the target sum, violating the requirement for equal sums.
+             * For example,arr[]={15,5} if targetSum = 10 and you have an element x = 15,
+             * adding x to either of the subset will result in a sum greater than 10, thus
+             * making it impossible to partition the array into two equal sum subset
+             */
+            if (arr[index] > targetSum) {
+                return false;
+            }
+
+            for (int sum = targetSum; sum >= 0; sum--) {
+                if (sum >= arr[index] && dp[index + 1][sum - arr[index]]) {
+                    dp[index][sum] = true;
+                } else {
+                    dp[index][sum] = dp[index + 1][sum];
+                }
+            }
+
+            if (dp[index][targetSum]) {
+                return true;
+            }
+        }
+
+        return dp[0][targetSum];
+    }
+}
+
+
+//Aliter (space optimised)
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int arr[], int targetSum) {
+        boolean[] currentRow = new boolean[targetSum + 1];
+        boolean[] nextRow = new boolean[targetSum + 1];
+
+        nextRow[0] = true;
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            if (arr[index] > targetSum) {
+                return false;
+            }
+
+            for (int sum = targetSum; sum >= 0; sum--) {
+                if (sum >= arr[index] && nextRow[sum - arr[index]]) {
+                    currentRow[sum] = true;
+                } else {
+                    currentRow[sum] = nextRow[sum];
+                }
+            }
+
+            if (currentRow[targetSum]) {
+                return true;
+            }
+
+            boolean[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[targetSum];
+    }
+}
+
+
+//Aliter (further space optimised)
+
+class Solution {
+    public boolean canPartition(int[] arr) {
+        int arrSum = 0;
+        for (int num : arr) {
+            arrSum += num;
+        }
+
+        return arrSum % 2 != 0 ? false : hasSubsetWithTargetSum(arr, arrSum / 2);
+    }
+
+    private boolean hasSubsetWithTargetSum(int arr[], int targetSum) {
+        boolean[] currentRow = new boolean[targetSum + 1];
+        boolean[] nextRow = new boolean[targetSum + 1];
+
+        nextRow[0] = true;
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            if (arr[index] > targetSum) {
+                return false;
+            }
+
+            for (int sum = targetSum; sum >= 0; sum--) {
+                if (sum >= arr[index] && nextRow[sum - arr[index]]) {
+                    nextRow[sum] = true;
+                } else {
+                    nextRow[sum] = nextRow[sum];
+                }
+            }
+
+            if (nextRow[targetSum]) {
+                return true;
+            }
+        }
+
+        return nextRow[targetSum];
+    }
+}
