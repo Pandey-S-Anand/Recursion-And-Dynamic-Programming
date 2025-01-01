@@ -1,0 +1,109 @@
+Logic :
+/*
+  When tiling a 2 x n floor using 2 x 1 tiles, there are two primary choices for each tile placement:
+
+  1. **Placing a vertical tile (2 x 1)**:
+     - A vertical tile covers one column and two rows. This leaves a remaining floor of size 2 x (n-1) to tile.
+
+  2. **Placing a horizontal tile (1 x 2)**:
+     - A horizontal tile covers two columns and one row. This reduces the remaining floor to a 2 x (n-2) floor.
+     - Additionally, the placement of a horizontal tile creates a 2 x 1 area just above it, which must also be tiled with another horizontal tile.
+
+  The total number of ways to tile a 2 x n floor is the sum of:
+  - The number of ways to tile a 2 x (n-1) floor (placing a vertical tile).
+  - The number of ways to tile a 2 x (n-2) floor (placing a horizontal tile, and the additional 2 x 1 area must be tiled with another horizontal tile).
+
+  Thus, the recurrence relation becomes:
+  ways(n) = ways(n-1) + ways(n-2)
+*/
+
+
+//Bruteforce Approach
+
+lass Solution {
+    static int numberOfWays(int n) {
+        return countWays(n);
+    }
+
+    private static int countWays(int n) {
+        /*
+         * Base cases:
+         * If the length of the floor is 1 (2 x 1 floor), there is only 1 way to tile it (place a single vertical tile).
+         * If the length is 2 (2 x 2 floor), there are 2 ways to tile it (either place
+         * two vertical tiles or two horizontal tiles).
+         */
+        if (n <= 2) {
+            return n;
+        }
+        
+        return countWays(n - 1) + countWays(n - 2);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private static int[] cache;
+
+    static int numberOfWays(int n) {
+        cache = new int[n + 1];
+        return countWays(n);
+    }
+
+    private static int countWays(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        if (cache[n] != 0) {
+            return cache[n];
+        }
+
+        return cache[n] = countWays(n - 1) + countWays(n - 2);
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    static int numberOfWays(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        int[] dp = new int[n + 1];
+
+        dp[1] = 1;
+        dp[2] = 2;
+
+        for (int width = 3; width <= n; width++) {
+            dp[width] = dp[width - 1] + dp[width - 2];
+        }
+
+        return dp[n];
+    }
+}
+
+
+//Aliter (Space optimised)
+
+class Solution {
+    static int numberOfWays(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        int previous2 = 1;
+        int previous1 = 2;
+
+        for (int width = 3; width <= n; width++) {
+            int current = previous1 + previous2;
+            previous2 = previous1;
+            previous1 = current;
+        }
+
+        return previous1;
+    }
+}
