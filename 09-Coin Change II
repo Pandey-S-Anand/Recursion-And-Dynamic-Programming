@@ -1,0 +1,180 @@
+//Bruteforce Approach
+
+class Solution {
+    public int change(int amount, int[] coins) {
+        return coinChange(coins, 0, amount);
+    }
+
+    private int coinChange(int[] coins, int index, int amount) {
+        /*
+         * Base case: If the remaining amount to be made is 0,
+         * it means we've found a valid combination of coins
+         */
+        if (amount == 0) {
+            return 1; // Count this combination
+        }
+
+        /*
+         * Base case: If we've exhausted all coins and still have remaining amount,
+         * it means this path does not lead to a valid combination
+         */
+        if (index == coins.length) {
+            return 0; // No valid combination found
+        }
+
+        int include = 0;
+        // Check if the current coin can be included in the combination
+        if (coins[index] <= amount) {
+            /*
+             * Include the current coin and stay at the same index to allow for
+             * using the coin again (since we have an infinite supply)
+             */
+            include = coinChange(coins, index, amount - coins[index]);
+        }
+        // Move to the next coin and calculate the combinations excluding the current coin
+        int exclude = coinChange(coins, index + 1, amount);
+
+        // Return the total combinations by adding the combinations including the current coin and excluding it
+        return (include + exclude);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int change(int amount, int[] coins) {
+        cache = new int[coins.length][amount + 1];
+        intializeCache();
+        return coinChange(coins, 0, amount);
+    }
+
+    private int coinChange(int[] coins, int index, int amount) {
+        if (amount == 0) {
+            return 1;
+        }
+
+        if (index == coins.length) {
+            return 0;
+        }
+
+        if (cache[index][amount] != -1) {
+            return cache[index][amount];
+        }
+
+        int include = 0;
+        if (coins[index] <= amount) {
+            include = coinChange(coins, index, amount - coins[index]);
+        }
+
+        int exclude = coinChange(coins, index + 1, amount);
+
+        return cache[index][amount] = (include + exclude);
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+//Naive Implementation
+
+class Solution {
+    public int change(int amount, int[] coins) {
+        //dp[i][j] represents the number of combinations possible to make up the amount 'j' using the first 'i' coins from the coins array. i.e coins[i...coins.length - 1]
+        int[][] dp = new int[coins.length + 1][amount + 1];
+
+        dp[coins.length][0] = 1;
+
+        for (int index = 0; index < coins.length; index++) {
+            dp[index][0] = 1;
+        }
+
+        for (int sum = 1; sum <= amount; sum++) {
+            dp[coins.length][sum] = 0;
+        }
+
+        for (int index = coins.length - 1; index >= 0; index--) {
+            for (int sum = 1; sum <= amount; sum++) {
+                int include = 0;
+                if (coins[index] <= sum) {
+                    include = dp[index][sum - coins[index]];
+                }
+
+                int exclude = dp[index + 1][sum];
+
+                dp[index][sum] = (include + exclude);
+            }
+        }
+
+        return dp[0][amount];
+    }
+}
+
+
+//Optimal Implementation 
+
+class Solution {
+    public int change(int amount, int[] coins) {
+        //dp[i][j] represents the number of combinations possible to make up the amount 'j' using the first 'i' coins from the coins array. i.e coins[i...coins.length - 1]
+        int[][] dp = new int[coins.length + 1][amount + 1];
+
+        for (int index = 0; index <= coins.length; index++) {
+            dp[index][0] = 1;
+        }
+
+        for (int index = coins.length - 1; index >= 0; index--) {
+            for (int sum = 1; sum <= amount; sum++) {
+                int include = 0;
+                if (coins[index] <= sum) {
+                    include = dp[index][sum - coins[index]];
+                }
+
+                int exclude = dp[index + 1][sum];
+
+                dp[index][sum] = (include + exclude);
+            }
+        }
+
+        return dp[0][amount];
+    }
+}
+
+
+//Aliter (space optimised)
+
+class Solution {
+    public int change(int amount, int[] coins) {
+        int[] nextRow = new int[amount + 1];
+        int[] currentRow = new int[amount + 1];
+
+        nextRow[0] = 1;
+
+        for (int index = coins.length - 1; index >= 0; index--) {
+            currentRow[0] = 1;
+            for (int sum = 1; sum <= amount; sum++) {
+                int include = 0;
+                if (coins[index] <= sum) {
+                    include = currentRow[sum - coins[index]];
+                }
+
+                int exclude = nextRow[sum];
+
+                currentRow[sum] = (include + exclude);
+            }
+
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[amount];
+    }
+}
