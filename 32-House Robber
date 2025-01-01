@@ -1,0 +1,95 @@
+//Bruteforce Approach
+
+class Solution {
+    public int rob(int[] arr) {
+        return rob(arr, 0);
+    }
+
+    private int rob(int[] arr, int index) {
+        // Base case: if the index is out of bounds, return 0 because there are no more houses to rob
+        if (index >= arr.length) {
+            return 0;
+        }
+        
+        // Option 1: Rob the current house (arr[index]) and move to the next house that can be robbed, i.e., index + 2
+        int rob = arr[index] + rob(arr, index + 2);
+        // Option 2: Skip the current house and move to the next house, i.e., index + 1
+        int notRob = rob(arr, index + 1);
+        
+        // Return the maximum of robbing the current house or skipping it
+        return Math.max(rob, notRob);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[] cache;
+
+    public int rob(int[] arr) {
+        cache = new int[arr.length];
+        Arrays.fill(cache, -1);
+        return rob(arr, 0);
+    }
+
+    private int rob(int[] arr, int index) {
+        if (index >= arr.length) {
+            return 0;
+        }
+
+        if (cache[index] != -1) {
+            return cache[index];
+        }
+
+        int rob = arr[index] + rob(arr, index + 2);
+        int notRob = rob(arr, index + 1);
+
+        return cache[index] = Math.max(rob, notRob);
+    }
+}
+
+
+//Optmal Approach
+
+class Solution {
+    public int rob(int[] arr) {
+        // dp[i] represents the maximum money that can be robbed starting from house 'i' and considering all houses from 'i' to the end.
+        int[] dp = new int[arr.length];
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int rob = arr[i];
+            if (i + 2 < arr.length) {
+                rob += dp[i + 2];
+            }
+
+            int notRob = 0;
+            if (i + 1 < arr.length) {
+                notRob = dp[i + 1];
+            }
+
+            dp[i] = Math.max(rob, notRob);
+        }
+
+        return dp[0];
+    }
+}
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int rob(int[] arr) {
+        int next2 = 0, next1 = 0, current = 0;
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int rob = arr[i] + next2;
+            int notRob = next1;
+
+            current = Math.max(rob, notRob);
+            next2 = next1;
+            next1 = current;
+        }
+
+        return next1;
+    }
+}
