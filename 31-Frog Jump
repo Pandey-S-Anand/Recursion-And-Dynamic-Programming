@@ -1,0 +1,277 @@
+/*
+The problem guarantees that the frog starts at the first stone, and its movement must always be forward.
+This constraint means that backward recursion would not be suitable in this case.
+*/
+
+//Bruteforce Approach
+
+/*
+ * stones = [0, 1, 3, 5, 6, 8, 12, 17]
+ * The river is divided into continuous units from 0 to some maximum value
+ * (e.g., 0 to 17 in the example).
+ * Some of these units contain stones, and some contain water:
+ * Units that contain stones are explicitly provided in the array stones.
+ * i.e., stones[i] represents that a stone is present at unit stones[i].
+ * Units not listed in the array contain water.
+ * 
+ * As per the problem statement, the frog starts at unit 0, and unit 0 contains a stone.
+ * i.e., stones[0] = 0.
+ * 
+ * Since the stones array is sorted, the 0th unit will be present in stones array 
+ * at the 0th index.
+ */
+
+class Solution {
+    public boolean canCross(int[] stones) {
+        /*
+         * Since the frog can only make a 1-unit jump from unit 0,
+         * the first jump must land at unit 1.
+         * Therefore, unit 1 must contain a stone for the frog to proceed.
+         * 
+         * Since the stones array is sorted in ascending order,
+         * unit 1 will be present in the stones array at the 1st index.
+         */
+
+        if (stones[1] != 1) {
+            return false;
+        }
+
+        // Start from the second unit (index 1) with lastJump = 1.(i.e from unit 0 to unit 1)
+        return canCross(stones, 1, 1);
+    }
+
+    private boolean canCross(int[] stones, int currentUnitIndex, int lastJump) {
+        /*
+         * If you reach the last stone (stones[stones.length - 1]), return true.
+         * The problem implicitly guarantees that the last stone is at the last unit of the river.
+         * Since the stones array is sorted in ascending order, the last stone is always
+         * at index stones.length - 1.
+         */
+        if (currentUnitIndex == stones.length - 1) {
+            return true;
+        }
+
+        // Try all possible jumps (k-1, k, k+1) from the current unit.
+        for (int jump = lastJump - 1; jump <= lastJump + 1; jump++) {
+            // Skip zero-length jumps.
+            if (jump == 0) {
+                continue;
+            }
+
+            // Now check if the stone is present at next unit = ((currentUnit i.e stones[currentUnitIndex]) + jump)
+            int nextUnitIndex = isStonePresent(stones, stones[currentUnitIndex] + jump, currentUnitIndex);
+
+            // If stone is present at 'next unit' then frog can jump there, recurse further.
+            if (nextUnitIndex != -1) {
+                // If the frog successfully reaches the last stone from the next unit, return true
+                if (canCross(stones, nextUnitIndex, jump)) {
+                    return true;
+                }
+                // If the frog can not reach the last stone from the next unit, try the next possible jump
+            }
+            // If there is no stone at the 'next unit', try the next possible jump
+        }
+
+        // If no valid jumps work, return false.
+        return false;
+    }
+
+    private int isStonePresent(int[] stones, int nextUnit, int currentUnitIndex) {
+        for (int i = currentUnitIndex + 1; i < stones.length; i++) {
+            if (stones[i] == nextUnit) {
+                return i; // return index of the next unit i.e stone exist at next unit
+            }
+        }
+        return -1; // Return -1 if the stone doesn't exist at next unit.
+    }
+}
+
+
+//Improved Approach
+
+class Solution {
+    private Map<Integer, Integer> unitIndexMap;
+
+    public boolean canCross(int[] stones) {
+        if (stones[1] != 1) {
+            return false;
+        }
+
+        unitIndexMap = new HashMap<>();
+        for (int i = 0; i < stones.length; i++) {
+            unitIndexMap.put(stones[i], i);
+        }
+
+        return canCross(stones, 1, 1);
+    }
+
+    private boolean canCross(int[] stones, int currentUnitIndex, int lastJump) {
+        if (currentUnitIndex == stones.length - 1) {
+            return true;
+        }
+
+        for (int jump = lastJump - 1; jump <= lastJump + 1; jump++) {
+            if (jump == 0) {
+                continue;
+            }
+
+            int nextUnitIndex = -1;
+
+            if (unitIndexMap.containsKey(stones[currentUnitIndex] + jump)) {
+                nextUnitIndex = unitIndexMap.get(stones[currentUnitIndex] + jump);
+            }
+
+            if (nextUnitIndex != -1 && canCross(stones, nextUnitIndex, jump)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+
+//Better Approach
+
+/*
+ * At any stone, if the frog's last jump was k, then the next jump can be one of three options:
+ * k−1
+ * k
+ * k+1
+ * 
+ * The maximum value of the previous jump size can be acheived when the value of
+ * k is maximum which happens when the stones are evenly spaced . In this case, 
+ * the frog can potentially keep making larger and larger jumps with each stone it visits.
+ * With evenly spaced stones, the frog’s jump size can increase linearly as it
+ * moves from stone to stone.
+ * Example 1: Stones are evenly spaced
+ * [0, 1, 2, 3, 4, 5, 6]
+ * 
+ * On the other hand, with unevenly spaced stones, the frog's next jump may not
+ * always increase and may have to be adjusted based on the available stones.
+ * Example 2: Unevenly spaced stones
+ * 
+ * [0, 1, 3, 5, 6, 8, 12, 17]
+ */
+
+class Solution {
+    private int[][] cache;
+    private Map<Integer, Integer> unitIndexMap;
+
+    public boolean canCross(int[] stones) {
+        if (stones[1] != 1) {
+            return false;
+        }
+
+        unitIndexMap = new HashMap<>();
+        for (int i = 0; i < stones.length; i++) {
+            unitIndexMap.put(stones[i], i);
+        }
+
+        cache = new int[stones.length - 1][stones.length];
+        intializeCache();
+
+        return canCross(stones, 1, 1);
+    }
+
+    private boolean canCross(int[] stones, int currentUnitIndex, int lastJump) {
+        if (currentUnitIndex == stones.length - 1) {
+            return true;
+        }
+
+        if (cache[currentUnitIndex][lastJump] != -1) {
+            return cache[currentUnitIndex][lastJump] == 1;
+        }
+
+        for (int jump = lastJump - 1; jump <= lastJump + 1; jump++) {
+            if (jump == 0) {
+                continue;
+            }
+
+            int nextUnitIndex = -1;
+
+            if (unitIndexMap.containsKey(stones[currentUnitIndex] + jump)) {
+                nextUnitIndex = unitIndexMap.get(stones[currentUnitIndex] + jump);
+            }
+
+            if (nextUnitIndex != -1 && canCross(stones, nextUnitIndex, jump)) {
+                cache[currentUnitIndex][lastJump] = 1;
+                return true;
+            }
+        }
+        cache[currentUnitIndex][lastJump] = 0;
+        return false;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    private int[][] cache;
+
+    public boolean canCross(int[] stones) {
+        if (stones[1] != 1) {
+            return false;
+        }
+
+        cache = new int[stones.length - 1][stones.length];
+        intializeCache();
+
+        return canCross(stones, 1, 1);
+    }
+
+    private boolean canCross(int[] stones, int currentUnitIndex, int lastJump) {
+        if (currentUnitIndex == stones.length - 1) {
+            return true;
+        }
+
+        if (cache[currentUnitIndex][lastJump] != -1) {
+            return cache[currentUnitIndex][lastJump] == 1;
+        }
+
+        for (int jump = lastJump - 1; jump <= lastJump + 1; jump++) {
+            if (jump == 0) {
+                continue;
+            }
+
+            int nextUnitIndex = isStonePresent(stones, currentUnitIndex + 1, stones.length - 1, stones[currentUnitIndex] + jump);
+
+            if (nextUnitIndex != -1 && canCross(stones, nextUnitIndex, jump)) {
+                cache[currentUnitIndex][lastJump] = 1;
+                return true;
+            }
+        }
+        cache[currentUnitIndex][lastJump] = 0;
+        return false;
+    }
+
+    // Perform binary search to find if the stone is present at target unit since the stones array is sorted in ascending order
+    private int isStonePresent(int[] arr, int low, int high, int target) {
+        while (low <= high) {
+            int mid = (low + high) / 2;
+
+            if (arr[mid] == target) {
+                return mid;
+            } else if (arr[mid] < target) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        return -1;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
