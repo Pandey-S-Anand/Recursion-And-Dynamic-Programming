@@ -1,0 +1,100 @@
+/*
+When tiling a floor of size n x m with 1 x m tiles:
+
+1. If m > n:
+   - Tiles cannot be placed vertically due to insufficient height.
+   - The only option is to place all tiles horizontally.
+   - This results in exactly 1 way to tile the floor.
+
+2. If m <= n:
+   - Two primary choices for tile placement:
+     
+     a) Horizontal Placement:
+        - The tile covers 1 row and m columns.
+        - The remaining floor size becomes (n - 1) x m.
+
+     b) Vertical Placement:
+        - The tile covers 1 column and m rows.
+        - The remaining floor is split into two sections:
+          
+          i)  Top Section: 
+             - Height: n - m
+             - Width: m
+          
+          ii) Bottom Section:
+              - Height: m
+              - Width: m - 1
+
+        - In the bottom section, horizontal tile placement is impossible 
+          because the width (m - 1) is less than the tile width (m).
+        - Therefore, all tiles in this section must be placed vertically.
+*/
+
+//Bruteforce Approach
+
+class Solution {
+    private static final int MOD = 1000000007;
+
+    public int countWays(int n, int m) {
+        return countWaysToTileFloor(n, m);
+    }
+
+    private int countWaysToTileFloor(int n, int m) {
+        // Base case: If the height of the floor is smaller than the tile width (n < m), we can only place tiles horizontally across the entire floor.
+        if (n < m) {
+            return 1;
+        }
+
+        // Recurrence relation for tiling:
+        // 1. If we place the first tile horizontally, the remaining floor is of size (n - 1) x m.
+        // 2. If we place the first tile vertically, the remaining floor is of size (n - m) x m.
+        return (countWaysToTileFloor(n - 1, m) % MOD + countWaysToTileFloor(n - m, m) % MOD) % MOD;
+    }
+}
+
+
+// Better Approach
+
+class Solution {
+    private static final int MOD = 1000000007;
+    private int[] cache;
+
+    public int countWays(int n, int m) {
+        cache = new int[n + 1];
+        return countWaysToTileFloor(n, m);
+    }
+
+    private int countWaysToTileFloor(int n, int m) {
+        if (n < m) {
+            return 1;
+        }
+
+        if (cache[n] != 0) {
+            return cache[n];
+        }
+
+        return cache[n] = (countWaysToTileFloor(n - 1, m) % MOD + countWaysToTileFloor(n - m, m) % MOD) % MOD;
+    }
+}
+
+
+//Optimal Approach
+
+class Solution{
+    private static final int MOD = 1000000007;
+
+    public int countWays(int n, int m){
+      // dp[i]: The number of ways to tile a floor of height i and width m using tiles of size 1 x m.
+      int[] dp = new int[n + 1];
+      
+        for (int height = 0; height <= n; height++) {
+            if (height < m) {
+                dp[height] = 1;
+            } else {
+                dp[height] = (dp[height - 1] % MOD + dp[height - m] % MOD) % MOD;
+            }
+        }
+
+        return dp[n];
+    }
+}
