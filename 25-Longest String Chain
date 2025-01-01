@@ -1,0 +1,384 @@
+/* 
+The key idea in solving the longest string chain problem is that each subsequent word in the 
+chain must contain the previous word as a subsequence and be exactly one character longer. 
+To guarantee that we process words in increasing order of length, we first sort the array. 
+This sorting step is fundamental to the approach.
+*/
+
+//Bruteforce approach
+
+class Solution {
+    public int longestStrChain(String[] arr) {
+        /*
+         * The default behavior of Arrays.sort() sorts strings lexicographically (alphabetically).
+         * However, in this case, we are sorting the array of words based on their lengths.
+         * The comparator compares the length of two strings (str1.length() - str2.length()) 
+         * to sort them in ascending order of length.
+         */
+        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
+        return longestStrChain(arr, 0, -1);
+    }
+
+    private int longestStrChain(String[] arr, int index, int lastIncludedIndex) {
+        if (index == arr.length) {
+            return 0;
+        }
+        /*
+         * If lastIncludedIndex is -1 (meaning no word has been included yet), it
+         * indicates that we can start a chain with any word from the array.
+         * Alternatively, if the current word can form a valid chain with the word at
+         * lastIncludedIndex (i.e., the previous word in the chain), we consider
+         * including the current word in the chain.
+         */
+
+        int include = 0;
+        if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
+            include = 1 + longestStrChain(arr, index + 1, index);
+        }
+
+        // Exclude the current word and move on to the next word
+        int exclude = longestStrChain(arr, index + 1, lastIncludedIndex);
+
+        // Return the maximum length from including or excluding the current word
+        return Math.max(include, exclude);
+    }
+
+    private boolean isValidChain(String previousWord, String nextWord) {
+        /*
+         * Valid chain condition: The length of the next word in the chain must be
+         * exactly 1 greater than the length of the previous word, and the previous word
+         * must be a
+         * subsequence of the next word.
+         */
+
+        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSubsequence(String str1, String str2) {
+        int i = 0, j = 0;
+        while (i < str1.length() && j < str2.length()) {
+            if (str1.charAt(i) == str2.charAt(j)) {
+                i++;
+            }
+            j++;
+
+            // Early exit: if remaining characters in str1 exceed remaining in str2
+            if (str1.length() - i > str2.length() - j) {
+               return false;
+            }
+        }
+        // If we've traversed all characters in str1, it means it's a subsequence of str2
+        return i == str1.length();
+    }
+}
+
+
+//Improved Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int longestStrChain(String[] arr) {
+        cache = new int[arr.length][arr.length];
+        intializeCache();
+        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
+        return longestStrChain(arr, 0, -1);
+    }
+
+    private int longestStrChain(String[] arr, int index, int lastIncludedIndex) {
+        if (index == arr.length) {
+            return 0;
+        }
+
+        if (cache[index][lastIncludedIndex + 1] != -1) {
+            return cache[index][lastIncludedIndex + 1];
+        }
+
+        int include = 0;
+        if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
+            include = 1 + longestStrChain(arr, index + 1, index);
+        }
+
+        int exclude = longestStrChain(arr, index + 1, lastIncludedIndex);
+
+        return cache[index][lastIncludedIndex + 1] = Math.max(include, exclude);
+    }
+
+    private boolean isValidChain(String previousWord, String nextWord) {
+        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSubsequence(String str1, String str2) {
+        int i = 0, j = 0;
+        while (i < str1.length() && j < str2.length()) {
+            if (str1.charAt(i) == str2.charAt(j)) {
+                i++;
+            }
+            j++;
+
+            if (str1.length() - i > str2.length() - j) {
+               return false;
+            }
+        }
+
+        return i == str1.length();
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    public int longestStrChain(String[] arr) {
+        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
+
+        int[][] dp = new int[arr.length + 1][arr.length + 1];
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+                if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
+                    include = 1 + dp[index + 1][index + 1];
+                }
+
+                int exclude = dp[index + 1][lastIncludedIndex + 1];
+
+                dp[index][lastIncludedIndex + 1] = Math.max(include, exclude);
+            }
+        }
+
+        return dp[0][0];
+    }
+
+    private boolean isValidChain(String previousWord, String nextWord) {
+        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSubsequence(String str1, String str2) {
+        int i = 0, j = 0;
+        while (i < str1.length() && j < str2.length()) {
+            if (str1.charAt(i) == str2.charAt(j)) {
+                i++;
+            }
+            j++;
+            if (str1.length() - i > str2.length() - j) {
+                return false;
+            }
+        }
+
+        return i == str1.length();
+    }
+}
+
+//Aliter (space optimised approach)
+
+class Solution {
+    public int longestStrChain(String[] arr) {
+        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
+
+        int[] nextRow = new int[arr.length + 1];
+        int[] currentRow = new int[arr.length + 1];
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+                if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
+                    include = 1 + nextRow[index + 1];
+                }
+
+                int exclude = nextRow[lastIncludedIndex + 1];
+
+                currentRow[lastIncludedIndex + 1] = Math.max(include, exclude);
+            }
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[0];
+    }
+
+    private boolean isValidChain(String previousWord, String nextWord) {
+        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSubsequence(String str1, String str2) {
+        int i = 0, j = 0;
+        while (i < str1.length() && j < str2.length()) {
+            if (str1.charAt(i) == str2.charAt(j)) {
+                i++;
+            }
+            j++;
+
+            if (str1.length() - i > str2.length() - j) {
+                return false;
+            }
+        }
+
+        return i == str1.length();
+    }
+}
+
+//Aliter (Further space optimised approach)
+
+class Solution {
+    public int longestStrChain(String[] arr) {
+        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
+
+        int[] dp = new int[arr.length + 1];
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+                if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
+                    include = 1 + dp[index + 1];
+                }
+
+                int exclude = dp[lastIncludedIndex + 1];
+
+                dp[lastIncludedIndex + 1] = Math.max(include, exclude);
+            }
+        }
+
+        return dp[0];
+    }
+
+    private boolean isValidChain(String previousWord, String nextWord) {
+        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isSubsequence(String str1, String str2) {
+        int i = 0, j = 0;
+        while (i < str1.length() && j < str2.length()) {
+            if (str1.charAt(i) == str2.charAt(j)) {
+                i++;
+            }
+            j++;
+
+            if (str1.length() - i > str2.length() - j) {
+                return false;
+            }
+        }
+
+        return i == str1.length();
+    }
+}
+
+//Optimal Approach
+
+/*
+ * Sorting the words by length ensures that each word’s potential predecessors (which are shorter) 
+ * are processed before the word itself, enabling us to build chains progressively.
+ * 
+ * The key insight is that adding a single character to a word (wordA) to form another word (wordB), 
+ * where wordA is a valid predecessor of wordB, is equivalent to removing one character from wordB 
+ * to obtain wordA.
+ *
+ * Approach:
+ * Each word can independently start its own chain, so we initialize its chain length to 1 in the dp map.
+ * By treating each word as a potential endpoint of the longest chain, we calculate its possible predecessors 
+ * by removing one character at a time.
+ *
+ * For each predecessor generated, we check if it exists in the dp map. If it does, it means the predecessor 
+ * has a chain length (retrieved from `dp.get(predecessor)`) that can extend to the current word. We then compare 
+ * the chain lengths of all predecessors and select the longest one. Finally, we append the current word to that 
+ * chain, increasing its length by one.
+ *
+ * After processing all predecessors, we update the maximum chain length (`maxChainLength`) with the longest chain 
+ * found across all words.
+ */
+
+
+//Naive Implementation 
+
+class Solution {
+    public int longestStrChain(String[] words) {
+       // Sort words by length to ensure that predecessors are processed before longer words because the predecessor's length is always 1 less than the current word length
+        Arrays.sort(words, (word1, word2) -> word1.length() - word2.length());
+
+        // Map to store the maximum chain length ending with each word
+        Map<String, Integer> dp = new HashMap<>();
+        int longestChain = 1; // Initialize the longest chain length found
+
+        for (String word : words) {
+            dp.put(word, 1); // Initialize each word's chain length as 1
+            int maxLengthChainFromPredecessor = 0; // Track predecessor of the current word which is forming the longest chain
+
+            // Generate all possible predecessor by removing one character at a time from the current word
+            for (int i = 0; i < word.length(); i++) {
+                String predecessor = word.substring(0, i) + word.substring(i + 1);
+
+                // Check if the predecessor exists and update the max chain length accordingly
+                if (dp.containsKey(predecessor)) {
+                    maxLengthChainFromPredecessor = Math.max(maxLengthChainFromPredecessor, dp.get(predecessor));
+                }
+            }
+
+            // The current word’s chain length is maxLengthChainFromPredecessor + 1
+            dp.put(word, maxLengthChainFromPredecessor + 1);
+
+            // Update the overall longest chain length found so far
+            longestChain = Math.max(longestChain, dp.get(word));
+        }
+
+        return longestChain; // Return the longest chain length found across all words
+    }
+}
+
+
+//Optimal Implementation
+
+class Solution {
+    public int longestStrChain(String[] words) {
+        Arrays.sort(words, (word1, word2) -> word1.length() - word2.length());
+
+        Map<String, Integer> dp = new HashMap<>();
+        int longestChain = 1;
+
+        for (String word : words) {
+            dp.put(word, 1);
+            int maxLengthChainFromPredecessor = 0;
+
+            StringBuilder wordCopy = new StringBuilder(word);
+
+            for (int i = 0; i < word.length(); i++) {
+                char removedChar = wordCopy.charAt(i);
+                wordCopy.deleteCharAt(i);
+                String predecessor = wordCopy.toString();
+
+                if (dp.containsKey(predecessor)) {
+                    maxLengthChainFromPredecessor = Math.max(maxLengthChainFromPredecessor, dp.get(predecessor));
+                }
+
+                wordCopy.insert(i, removedChar);
+            }
+
+            dp.put(word, maxLengthChainFromPredecessor + 1);
+
+            longestChain = Math.max(longestChain, dp.get(word));
+        }
+
+        return longestChain;
+    }
+}
