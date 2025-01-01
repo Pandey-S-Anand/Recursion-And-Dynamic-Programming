@@ -1,0 +1,98 @@
+//Bruteforce Approach
+
+class Solution {
+    public int minCost(int n, int[] cuts) {
+        /*
+         * Sorting the cuts array is crucial because it ensures that when we make a cut,
+         * the stick is divided into valid left and right segments. Without sorting,
+         * cuts would not follow a logical order, leading to invalid divisions.
+         *
+         * Example with sorting:
+         * n = 7
+         * cuts = [4, 1, 3] → After Sorting: [1, 3, 4]
+         * 
+         * Steps (with sorting):
+         * 1. First Cut: At position `1`, divides the stick into `[0, 1]` and `[1, 7]`.
+         * 2. Second Cut: At position `3` within `[1, 7]`, divides it into `[1, 3]` and
+         * `[3, 7]`.
+         * 3. Third Cut: At position `4` within `[3, 7]`, divides it into `[3, 4]` and
+         * `[4, 7]`.
+         * 
+         * Example without sorting:
+         * n = 7
+         * cuts = [4, 1, 3] (unsorted cuts)
+         * 
+         * Steps (without sorting):
+         * 1. First Cut: At position `4`, divides the stick into `[0, 4]` and `[4, 7]`.
+         * 2. Second Cut: At position `1` within `[4, 7]`, but this is invalid because
+         * the position `1` is outside the range of the current segment `[4, 7]`.
+         * The cut at position `1` is not valid because it is in the left half, which
+         * leads to an invalid division of the stick.
+         */
+        Arrays.sort(cuts);
+        return calculateMinCost(cuts, 0, n, 0, cuts.length - 1);
+    }
+
+    private int calculateMinCost(int[] cuts, int startStick, int endStick, int leftIndex, int rightIndex) {
+        // Base case: If there are no cuts to make in the current segment (i.e., no cuts left between the start stick and end stick), return 0
+        if (leftIndex > rightIndex) {
+            return 0;
+        }
+
+        int minCost = Integer.MAX_VALUE;
+        // Try each cut between leftIndex and rightIndex
+        for (int partition = leftIndex; partition <= rightIndex; partition++) {
+            // Calculate the cost of cutting at cuts[i] and recursively solve for the left and right segments to get the minimum cost in both the halves
+            int leftCost = calculateMinCost(cuts, startStick, cuts[partition], leftIndex, partition - 1);
+            int rightCost = calculateMinCost(cuts, cuts[partition], endStick, partition + 1, rightIndex);
+            // Cost of making the current cut
+            int currentCost = (endStick - startStick) + leftCost + rightCost;
+            // Track the minimum cost across all possible cuts
+            minCost = Math.min(minCost, currentCost);
+        }
+
+        return minCost;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int minCost(int n, int[] cuts) {
+        Arrays.sort(cuts);
+        cache = new int[cuts.length][cuts.length];
+        intializeCache();
+        return calculateMinCost(cuts, 0, n, 0, cuts.length - 1);
+    }
+
+    private int calculateMinCost(int[] cuts, int startStick, int endStick, int leftIndex, int rightIndex) {
+        if (leftIndex > rightIndex) {
+            return 0;
+        }
+
+        if (cache[leftIndex][rightIndex] != -1) {
+            return cache[leftIndex][rightIndex];
+        }
+
+        int minCost = Integer.MAX_VALUE;
+        for (int partition = leftIndex; partition <= rightIndex; partition++) {
+            int leftCost = calculateMinCost(cuts, startStick, cuts[partition], leftIndex, partition - 1);
+            int rightCost = calculateMinCost(cuts, cuts[partition], endStick, partition + 1, rightIndex);
+            int currentCost = (endStick - startStick) + leftCost + rightCost;
+            minCost = Math.min(minCost, currentCost);
+        }
+
+        return cache[leftIndex][rightIndex] = minCost;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+//Optimal Approach
