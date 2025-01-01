@@ -1,0 +1,186 @@
+//Bruteforce Approach
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        return calculateMaxProfit(1, prices, 1, 2);
+    }
+
+    private int calculateMaxProfit(int day, int[] prices, int canBuy, int txnCount) {
+        if (txnCount == 0 || day > prices.length) {
+            return 0;
+        }
+
+        if (canBuy == 1) {
+            int buyStock = -prices[day - 1] + calculateMaxProfit(day + 1, prices, 0, txnCount);
+            int skipBuy = calculateMaxProfit(day + 1, prices, 1, txnCount);
+            return Math.max(buyStock, skipBuy);
+        }
+
+        int sellStock = prices[day - 1] + calculateMaxProfit(day + 1, prices, 1, txnCount - 1);
+        int skipSell = calculateMaxProfit(day + 1, prices, 0, txnCount);
+        return Math.max(sellStock, skipSell);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][][] cache;
+
+    public int maxProfit(int[] prices) {
+        cache = new int[prices.length + 1][2][3];
+        initializeCache();
+        return calculateMaxProfit(1, prices, 1, 2);
+    }
+
+    private int calculateMaxProfit(int day, int[] prices, int canBuy, int txnCount) {
+        if (txnCount == 0 || day > prices.length) {
+            return 0;
+        }
+
+        if (cache[day][canBuy][txnCount] != -1) {
+            return cache[day][canBuy][txnCount];
+        }
+
+        if (canBuy == 1) {
+            int buyStock = -prices[day - 1] + calculateMaxProfit(day + 1, prices, 0, txnCount);
+            int skipBuy = calculateMaxProfit(day + 1, prices, 1, txnCount);
+            return cache[day][canBuy][txnCount] = Math.max(buyStock, skipBuy);
+        }
+
+        int sellStock = prices[day - 1] + calculateMaxProfit(day + 1, prices, 1, txnCount - 1);
+        int skipSell = calculateMaxProfit(day + 1, prices, 0, txnCount);
+        return cache[day][canBuy][txnCount] = Math.max(sellStock, skipSell);
+    }
+
+    private void initializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            for (int j = 0; j < cache[0].length; j++) {
+                Arrays.fill(cache[i][j], -1);
+            }
+        }
+    }
+}
+
+
+//Optimal Approach
+
+//Naive Implementation 
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        /*
+         * dp[day][canBuy][txnCount] represents the maximum profit achievable from day 'day' to the last trading day under certain conditions:
+         *
+         * - If canBuy = 1, buying stock is allowed on that day. In this case, there are two choices:
+         * 1. Buy the stock, incurring a cost equal to the stock's price.
+         * 2. Skip buying, maintaining the current profit level.
+         * 
+         * - If canBuy = 0, buying is not allowed (meaning you may only sell on that day). Here, there are also two options:
+         * 1. Sell the stock, adding the current stock price to your profit.
+         * 2. Skip selling, keeping the profit unchanged from the previous day.
+         * 
+         * - txnCount: Tracks the number of transactions completed so far (up to 2  transactions are allowed, with txnCount values of 0, 1, or 2).
+         */
+
+        int[][][] dp = new int[prices.length + 1][2][3];
+
+        for (int day = 0; day <= prices.length; day++) {
+            for (int canBuy = 0; canBuy <= 1; canBuy++) {
+                dp[day][canBuy][0] = 0;
+            }
+        }
+
+        for (int canBuy = 0; canBuy <= 1; canBuy++) {
+            for (int txnCount = 0; txnCount <= 2; txnCount++) {
+                dp[prices.length][canBuy][txnCount] = 0;
+            }
+        }
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            for (int canBuy = 0; canBuy <= 1; canBuy++) {
+                for (int txnCount = 1; txnCount <= 2; txnCount++) {
+                    int profit = 0;
+                    if (canBuy == 1) {
+                        int buyStock = -prices[day] + dp[day + 1][0][txnCount];
+                        int skipBuy = dp[day + 1][1][txnCount];
+                        profit = Math.max(buyStock, skipBuy);
+                    } else {
+                        int sellStock = prices[day] + dp[day + 1][1][txnCount - 1];
+                        int skipSell = dp[day + 1][0][txnCount];
+                        profit = Math.max(sellStock, skipSell);
+                    }
+
+                    dp[day][canBuy][txnCount] = profit;
+                }
+            }
+        }
+
+        /*
+         * Return the maximum profit obtainable starting from the first day to the last
+         * trading day with 2 transactions completed, and with the option to buy. This
+         * indicates that you have the opportunity to buy at the end of the trading
+         * days, reflecting the completion of all transactions up to that point.
+         */
+        return dp[0][1][2];
+    }
+}
+
+
+//Optimal Implementation 
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        int[][][] dp = new int[prices.length + 1][2][3];
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            for (int txnCount = 1; txnCount <= 2; txnCount++) {
+                dp[day][1][txnCount] = Math.max(-prices[day] + dp[day + 1][0][txnCount], dp[day + 1][1][txnCount]);
+                dp[day][0][txnCount] = Math.max(prices[day] + dp[day + 1][1][txnCount - 1], dp[day + 1][0][txnCount]);
+            }
+        }
+
+        return dp[0][1][2];
+    }
+}
+
+
+//Aliter (space optimised : 3D to 2 2D array)
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        int[][] currentDay = new int[2][3];
+        int[][] nextDay = new int[2][3];
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            for (int txnCount = 1; txnCount <= 2; txnCount++) {
+                currentDay[1][txnCount] = Math.max(-prices[day] + nextDay[0][txnCount], nextDay[1][txnCount]);
+                currentDay[0][txnCount] = Math.max(prices[day] + nextDay[1][txnCount - 1], nextDay[0][txnCount]);
+            }
+            int[][] temp = currentDay;
+            currentDay = nextDay;
+            nextDay = temp;
+        }
+
+        return nextDay[1][2];
+    }
+}
+
+
+//Aliter (space optimised : 2 2D array to 1 2D array)
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        int[][] dp = new int[2][3];
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            for (int txnCount = 1; txnCount <= 2; txnCount++) {
+                dp[1][txnCount] = Math.max(-prices[day] + dp[0][txnCount], dp[1][txnCount]);
+                dp[0][txnCount] = Math.max(prices[day] + dp[1][txnCount - 1], dp[0][txnCount]);
+            }
+        }
+
+        return dp[1][2];
+    }
+}
