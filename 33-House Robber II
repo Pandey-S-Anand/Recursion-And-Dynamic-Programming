@@ -1,0 +1,131 @@
+//Bruteforce Approach
+
+class Solution {
+    public int rob(int[] arr) {
+        // Edge case: If there's only one house, return the amount in that house
+        if (arr.length == 1) {
+            return arr[0];
+        }
+
+        /*
+         * Since the houses are arranged in a circle, we can't rob both the first
+         * and the last house. Therefore, we split the problem into two cases:
+         * 1. Rob houses from the first house to the second-to-last house (index 0 to arr.length - 2)
+         * 2. Rob houses from the second house to the last house (index 1 to arr.length - 1)
+         * 
+         * The result will be the maximum amount robbed from these two cases.
+         */
+        return Math.max(rob(arr, 0, arr.length - 1), rob(arr, 1, arr.length));
+    }
+
+    private int rob(int[] arr, int index, int n) {
+        if (index >= n) {
+            return 0;
+        }
+
+        int rob = arr[index] + rob(arr, index + 2, n);
+
+        int notRob = rob(arr, index + 1, n);
+
+        return Math.max(rob, notRob);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[] cache;
+
+    public int rob(int[] arr) {
+        if (arr.length == 1) {
+            return arr[0];
+        }
+
+        cache = new int[arr.length];
+
+        Arrays.fill(cache, -1);
+        int case1 = rob(arr, 0, arr.length - 1);
+        Arrays.fill(cache, -1);
+        int case2 = rob(arr, 1, arr.length);
+
+        return Math.max(case1, case2);
+    }
+
+    private int rob(int[] arr, int index, int n) {
+        if (index >= n) {
+            return 0;
+        }
+
+        if (cache[index] != -1) {
+            return cache[index];
+        }
+
+        int rob = arr[index] + rob(arr, index + 2, n);
+
+        int notRob = rob(arr, index + 1, n);
+
+        return cache[index] = Math.max(rob, notRob);
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int rob(int[] arr) {
+        if (arr.length == 1) {
+            return arr[0];
+        }
+
+        return Math.max(rob(arr, 0, arr.length - 1), rob(arr, 1, arr.length));
+    }
+
+    private int rob(int[] arr, int index, int n) {
+        int[] dp = new int[n];
+
+        for (int i = n - 1; i >= index; i--) {
+            int rob = arr[i];
+            if (i + 2 < n) {
+                rob += dp[i + 2];
+            }
+
+            int notRob = 0;
+            if (i + 1 < n) {
+                notRob = dp[i + 1];
+            }
+
+            dp[i] = Math.max(rob, notRob);
+        }
+
+        return dp[index];
+    }
+}
+
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int rob(int[] arr) {
+        if (arr.length == 1) {
+            return arr[0];
+        }
+
+        return Math.max(rob(arr, 0, arr.length - 1), rob(arr, 1, arr.length));
+    }
+
+    private int rob(int[] arr, int index, int n) {
+        int next1 = 0, next2 = 0, current = 0;
+
+        for (int i = n - 1; i >= index; i--) {
+            int rob = arr[i] + next2;
+            int notRob = next1;
+
+            current = Math.max(rob, notRob);
+            next2 = next1;
+            next1 = current;
+        }
+
+        return next1;
+    }
+}
