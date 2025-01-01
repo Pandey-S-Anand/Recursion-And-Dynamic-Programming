@@ -1,0 +1,189 @@
+//Bruteforce Approach
+
+class Solution {
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        /*
+         * If the starting point (top-left corner) or the destination (bottom-rightcorner)
+         * itself is an obstacle, return 0 as no paths are possible to reach the bottom-right corner (i.e., grid[m - 1][n - 1]).
+         */
+        if (obstacleGrid[0][0] == 1 || obstacleGrid[obstacleGrid.length - 1][obstacleGrid[0].length - 1] == 1) {
+            return 0;
+        }
+        return uniquePathsWithObstacles(obstacleGrid, 0, 0, obstacleGrid.length, obstacleGrid[0].length);
+    }
+
+    private int uniquePathsWithObstacles(int[][] obstacleGrid, int row, int col, int m, int n) {
+        // Base case: if we've reached the bottom-right corner, a valid path has been found, return 1
+        if (row == m - 1 && col == n - 1) {
+            return 1;
+        }
+
+        int moveRight = 0;
+        // Check if moving right is within bounds and the cell is not an obstacle.
+        if (col + 1 < n && obstacleGrid[row][col + 1] == 0) {
+            moveRight = uniquePathsWithObstacles(obstacleGrid, row, col + 1, m, n);
+        }
+
+        int moveDown = 0;
+        // Check if moving down is within bounds and the cell is not an obstacle.
+        if (row + 1 < m && obstacleGrid[row + 1][col] == 0) {
+            moveDown = uniquePathsWithObstacles(obstacleGrid, row + 1, col, m, n);
+        }
+
+        return moveRight + moveDown;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        if (obstacleGrid[0][0] == 1 || obstacleGrid[obstacleGrid.length - 1][obstacleGrid[0].length - 1] == 1) {
+            return 0;
+        }
+
+        cache = new int[obstacleGrid.length][obstacleGrid[0].length];
+        intializeCache();
+        return uniquePathsWithObstacles(obstacleGrid, 0, 0, obstacleGrid.length, obstacleGrid[0].length);
+    }
+
+    private int uniquePathsWithObstacles(int[][] obstacleGrid, int row, int col, int m, int n) {
+        if (row == m - 1 && col == n - 1) {
+            return 1;
+        }
+
+        if (cache[row][col] != -1) {
+            return cache[row][col];
+        }
+
+        int moveRight = 0;
+        if (col + 1 < n && obstacleGrid[row][col + 1] == 0) {
+            moveRight = uniquePathsWithObstacles(obstacleGrid, row, col + 1, m, n);
+        }
+
+        int moveDown = 0;
+        if (row + 1 < m && obstacleGrid[row + 1][col] == 0) {
+            moveDown = uniquePathsWithObstacles(obstacleGrid, row + 1, col, m, n);
+        }
+
+        return cache[row][col] = moveRight + moveDown;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        int m = obstacleGrid.length, n = obstacleGrid[0].length;
+
+        if (obstacleGrid[0][0] == 1 || obstacleGrid[m - 1][n - 1] == 1) {
+            return 0;
+        }
+
+        // dp[row][col] represents the total number of unique paths from cell (row, col) to the bottom-right corner of the grid (m-1, n-1), considering obstacles.
+        int[][] dp = new int[m][n];
+
+        // At the bottom-right corner (last cell), there is only one way to be there: just "stand" at that position. Initialize it to 1.
+        dp[m - 1][n - 1] = 1;
+
+        // Fill the last column (from bottom to top)
+        for (int row = m - 2; row >= 0; row--) {
+            /*
+             * If the current cell has no obstacle and the cell below it can reach the destination (bottom-right corner),
+             * mark this cell as having a valid path to the destination.
+             * For cells in the last column, since movement is only possible downward, there is exactly one unique path to the destination
+             * from any cell in the last column.
+             */
+            if (dp[row + 1][n - 1] == 1 && obstacleGrid[row][n - 1] == 0) {
+                dp[row][n - 1] = 1;
+            }
+        }
+
+        // Fill the last row (from right to left)
+        for (int col = n - 2; col >= 0; col--) {
+           /*
+            * If the current cell does not contain an obstacle and the cell to the right can lead to the destination (bottom-right corner),
+            * mark this cell as having a valid path to the destination.
+            * In the last row, since the only move is to the right, every cell in this row has exactly one unique path to the bottom-right corner.
+            */
+            if (dp[m - 1][col + 1] == 1 && obstacleGrid[m - 1][col + 1] == 0) {
+                dp[m - 1][col] = 1;
+            }
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            for (int col = n - 2; col >= 0; col--) {
+                int moveRight = 0;
+                if (obstacleGrid[row][col + 1] == 0) {
+                    moveRight = dp[row][col + 1];
+                }
+
+                int moveDown = 0;
+                if (obstacleGrid[row + 1][col] == 0) {
+                    moveDown = dp[row + 1][col];
+                }
+
+                dp[row][col] = moveRight + moveDown;
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+
+//Aliter (Spce optimised)
+
+class Solution {
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        int m = obstacleGrid.length, n = obstacleGrid[0].length;
+
+        if (obstacleGrid[0][0] == 1 || obstacleGrid[m - 1][n - 1] == 1) {
+            return 0;
+        }
+
+        int[] currentRow = new int[n];
+        int[] nextRow = new int[n];
+
+        nextRow[n - 1] = 1;
+
+        for (int col = n - 2; col >= 0; col--) {
+            if (nextRow[col + 1] == 1 && obstacleGrid[m - 1][col + 1] == 0) {
+                nextRow[col] = 1;
+            }
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            currentRow[n - 1] = 1;
+            for (int col = n - 2; col >= 0; col--) {
+                int moveRight = 0;
+                if (obstacleGrid[row][col + 1] == 0) {
+                    moveRight = currentRow[col + 1];
+                }
+
+                int moveDown = 0;
+                if (obstacleGrid[row + 1][col] == 0) {
+                    moveDown = nextRow[col];
+                }
+
+                currentRow[col] = moveRight + moveDown;
+            }
+
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[0];
+    }
+}
