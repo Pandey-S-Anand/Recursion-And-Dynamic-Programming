@@ -1,0 +1,161 @@
+/*
+Logic :
+
+The minimum number of elements that need to be removed to form a mountain array 
+is equal to the count of elements that are not part of the longest bitonic subsequence (LBS).
+
+Explanation:
+1. Identify LBS: By finding the longest bitonic subsequence in the array, 
+   we determine the longest subsequence that already has a mountain structure 
+   (where elements strictly increase to a peak and then strictly decrease).
+
+2. Calculate Removals: The difference between the total number of elements in the array (n) 
+   and the length of the LBS gives the number of elements that do not fit this structure.
+   These are the elements that need to be removed to transform the array into a mountain array.
+*/
+
+
+class Solution {
+    public int minimumMountainRemovals(int[] arr) {
+        return arr.length - longestBitonicSequence(arr);
+    }
+
+    public int longestBitonicSequence(int[] arr) {
+        if (arr.length < 3) {
+            return 0;
+        }
+
+        int[] lisDp = lengthOfLIS(arr);
+        int[] ldsDp = lengthOfLDS(arr);
+
+        int longestBitonicSubsequence = 0;
+
+        for (int i = 0; i < arr.length; i++) {
+            if (lisDp[i] == 1 || ldsDp[i] == 1) {
+                continue;
+            }
+
+            longestBitonicSubsequence = Math.max(longestBitonicSubsequence, lisDp[i] + ldsDp[i] - 1);
+        }
+
+        return longestBitonicSubsequence;
+    }
+
+    private int[] lengthOfLIS(int[] arr) {
+        int[] dp = new int[arr.length];
+
+        for (int i = 0; i < arr.length; i++) {
+            int maxLISLengthBeforeIndexI = 0;
+            for (int j = 0; j < i; j++) {
+                if (arr[i] > arr[j]) {
+                    maxLISLengthBeforeIndexI = Math.max(maxLISLengthBeforeIndexI, dp[j]);
+                }
+            }
+            dp[i] = maxLISLengthBeforeIndexI + 1;
+        }
+
+        return dp;
+    }
+
+    private int[] lengthOfLDS(int[] arr) {
+        int[] dp = new int[arr.length];
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int maxLDSLengthAfterIndexI = 0;
+            for (int j = i + 1; j < arr.length; j++) {
+                if (arr[i] > arr[j]) { // Decreasing subsequence condition
+                    maxLDSLengthAfterIndexI = Math.max(maxLDSLengthAfterIndexI, dp[j]);
+                }
+            }
+            dp[i] = maxLDSLengthAfterIndexI + 1;
+        }
+
+        return dp;
+    }
+}
+
+//Optimal Approach
+
+class Solution {
+    public int minimumMountainRemovals(int[] arr) {
+        return arr.length - longestBitonicSequence(arr);
+    }
+
+    public int longestBitonicSequence(int[] arr) {
+        if (arr.length < 3) {
+            return 0;
+        }
+
+        int longestBitonicSubsequence = 0;
+        int[] lisDp = lengthOfLIS(arr);
+        int[] ldsDp = lengthOfLDS(arr);
+
+        for (int i = 0; i < arr.length; i++) {
+            int lis = lisDp[i];
+            int ldx = ldsDp[i];
+
+            if (lis == 1 || ldsDp[i] == 1) {
+                continue;
+            }
+
+            longestBitonicSubsequence = Math.max(longestBitonicSubsequence, lis + ldsDp[i] - 1);
+        }
+
+        return longestBitonicSubsequence;
+    }
+
+    private int[] lengthOfLIS(int[] arr) {
+        int[] lis = new int[arr.length];
+        int[] tail = new int[arr.length];
+        int length = 0;
+
+        for (int i = 0; i < arr.length; i++) {
+            int index = lowerBound(tail, length, arr[i]);
+
+            if (index == length) {
+                length++;
+            }
+
+            tail[index] = arr[i];
+            lis[i] = index + 1;
+        }
+
+        return lis;
+    }
+
+    private int[] lengthOfLDS(int[] arr) {
+        int[] lds = new int[arr.length];
+        int[] tail = new int[arr.length];
+        int length = 0;
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int index = lowerBound(tail, length, arr[i]);
+
+            if (index == length) {
+                length++;
+            }
+
+            tail[index] = arr[i];
+            lds[i] = index + 1;
+        }
+
+        return lds;
+    }
+
+    private int lowerBound(int[] arr, int n, int x) {
+        int low = 0, high = n - 1, lowerBound = n;
+
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+
+            if (arr[mid] >= x) {
+                lowerBound = mid;
+                high = mid - 1;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        return lowerBound;
+    }
+}
