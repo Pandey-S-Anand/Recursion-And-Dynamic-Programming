@@ -1,0 +1,204 @@
+//Bruteforce Approach
+
+//Method 1
+
+class Solution {
+    public int minimizeCost(int k, int arr[]) {
+        return minimumCost(arr, 0, arr.length - 1, k);
+    }
+
+    public int minimumCost(int[] height, int currentStair, int destinationStair, int k) {
+        // If we have reached the destination stair i.e arr.length - 1 , no energy is required.
+        if (currentStair == destinationStair) {
+            return 0;
+        }
+
+        // Initialize the minimum cost for the current stair.
+        int minCost = Integer.MAX_VALUE;
+        // Try jumps of all possible lengths from 1 to k (inclusive).
+        for (int step = 1; step <= k; step++) {
+            // If the jump goes beyond the destinationStair stair i.e arr.length - 1, break the loop (invalid jump).
+            if (currentStair + step > destinationStair) {
+                break;
+            }
+
+            int energyCost = minimumCost(height, currentStair + step, destinationStair, k) + Math.abs(height[currentStair + step] - height[currentStair]);
+
+            minCost = Math.min(minCost, energyCost);
+        }
+
+        return minCost;
+    }
+}
+
+
+//Method 2
+
+class Solution {
+    public int minimizeCost(int k, int arr[]) {
+        return minimumCost(arr, arr.length - 1, k);
+    }
+
+    public int minimumCost(int[] height, int currentStair, int k) {
+        // If we have reached the 0th stair, no energy is required.
+        if (currentStair == 0) {
+            return 0;
+        }
+
+        // Initialize the minimum cost for the current stair.
+        int minCost = Integer.MAX_VALUE;
+
+        // Try jumps of all possible lengths from 1 to k (inclusive).
+        for (int step = 1; step <= k; step++) {
+            // If the jump goes below the 0th stair, break the loop (invalid jump).
+            if (currentStair - step < 0) {
+                break;
+            }
+
+            int energyCost = minimumCost(height, currentStair - step, k) + Math.abs(height[currentStair - step] - height[currentStair]);
+
+            minCost = Math.min(minCost, energyCost);
+        }
+        // Return the minimum cost to reach the 0th stair from the current stair.
+        return minCost;
+    }
+}
+
+
+//Better Approach
+
+//Method 1
+
+class Solution {
+    private int[] cache;
+
+    public int minimizeCost(int k, int arr[]) {
+        cache = new int[arr.length];
+        Arrays.fill(cache, -1);
+        return minimumCost(arr, 0, arr.length - 1, k);
+    }
+
+    public int minimumCost(int[] height, int currentStair, int destinationStair, int k) {
+        if (currentStair == destinationStair) {
+            return 0;
+        }
+
+        if (cache[currentStair] != -1) {
+            return cache[currentStair];
+        }
+
+        int minCost = Integer.MAX_VALUE;
+
+        for (int step = 1; step <= k; step++) {
+
+            if (currentStair + step > destinationStair) {
+                break;
+            }
+
+            int energyCost = minimumCost(height, currentStair + step, destinationStair, k) + Math.abs(height[currentStair + step] - height[currentStair]);
+
+            minCost = Math.min(minCost, energyCost);
+        }
+
+        return cache[currentStair] = minCost;
+    }
+}
+
+
+//Method 2
+
+class Solution {
+    private int[] cache;
+
+    public int minimizeCost(int k, int arr[]) {
+        cache = new int[arr.length];
+        Arrays.fill(cache, -1);
+        return minimumCost(arr, arr.length - 1, k);
+    }
+
+    public int minimumCost(int[] height, int currentStair, int k) {
+        if (currentStair == 0) {
+            return 0;
+        }
+
+        if (cache[currentStair] != -1) {
+            return cache[currentStair];
+        }
+
+        int minCost = Integer.MAX_VALUE;
+
+        for (int step = 1; step <= k; step++) {
+            if (currentStair - step < 0) {
+                break;
+            }
+
+            int energyCost = minimumCost(height, currentStair - step, k) + Math.abs(height[currentStair - step] - height[currentStair]);
+
+            minCost = Math.min(minCost, energyCost);
+        }
+
+        return cache[currentStair] = minCost;
+    }
+}
+
+
+//Optimal Approach
+
+//Method 1
+
+class Solution {
+    public int minimizeCost(int k, int height[]) {
+        // dp[i] represents the minimum energy consumed to reach last stair from i th stair
+        int[] dp = new int[height.length];
+
+        // Base case: No energy required to stay at the last stair.
+        dp[height.length - 1] = 0;
+
+        for (int stair = height.length - 2; stair >= 0; stair--) {
+            int minEnergy = Integer.MAX_VALUE;
+
+            for (int step = 1; step <= k; step++) {
+                if (stair + step >= height.length) {
+                    break;
+                }
+
+                int energy = dp[stair + step] + Math.abs(height[stair] - height[stair + step]);
+
+                minEnergy = Math.min(minEnergy, energy);
+            }
+
+            dp[stair] = minEnergy;
+        }
+
+        return dp[0];
+    }
+}
+
+
+//Method 2
+
+class Solution {
+    public int minimizeCost(int k, int height[]) {
+        // dp[i] represents the minimum cost to reach the 0th stair from the ith stair
+        int[] dp = new int[height.length];
+
+        // Base case: No energy is required to stay at the Oth stair.
+        dp[0] = 0;
+
+        for (int stair = 1; stair < height.length; stair++) {
+            int minCost = Integer.MAX_VALUE; // Initialize the minimum cost for the current stair.
+            for (int step = 1; step <= k; step++) {
+                if (stair - step < 0) {
+                    break;
+                }
+
+                int energyCost = dp[stair - step] + Math.abs(height[stair - step] - height[stair]);
+
+                minCost = Math.min(minCost, energyCost);
+            }
+            dp[stair] = minCost;
+        }
+
+        return dp[height.length - 1];
+    }
+}
