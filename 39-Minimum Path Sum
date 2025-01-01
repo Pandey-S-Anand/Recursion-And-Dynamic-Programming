@@ -1,0 +1,142 @@
+//Bruteforce Approach
+
+class Solution {
+    public int minPathSum(int[][] grid) {
+        return minPathSum(grid, 0, 0, grid.length, grid[0].length);
+    }
+
+    private int minPathSum(int[][] grid, int row, int col, int m, int n) {
+        // Base Case: If we have reached the bottom-right corner of the grid (i.e grid[m-1][n-1]), return its value
+        if (row == m - 1 && col == n - 1) {
+            return grid[row][col];
+        }
+
+        int moveRight = Integer.MAX_VALUE;
+        // If it's possible to move right (i.e., within grid boundaries), move right and recursively calculate paths
+        if (col + 1 < n) {
+            moveRight = minPathSum(grid, row, col + 1, m, n);
+        }
+
+        int moveDown = Integer.MAX_VALUE;
+        // If it's possible to move down (i.e., within grid boundaries), move down and recursively calculate paths
+        if (row + 1 < m) {
+            moveDown = minPathSum(grid, row + 1, col, m, n);
+        }
+
+        /*
+         * Calculate and return the minimum path sum from the current cell to the bottom-right corner of the grid.
+         * Add the current cell's value to the smaller of the path sums obtained from moving right or moving down.
+         */
+        return grid[row][col] + Math.min(moveRight, moveDown);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int minPathSum(int[][] grid) {
+        cache = new int[grid.length][grid[0].length];
+        intializeCache();
+        return minPathSum(grid, 0, 0, grid.length, grid[0].length);
+    }
+
+    private int minPathSum(int[][] grid, int row, int col, int m, int n) {
+        if (row == m - 1 && col == n - 1) {
+            return grid[row][col];
+        }
+
+        if (cache[row][col] != -1) {
+            return cache[row][col];
+        }
+
+        int moveRight = Integer.MAX_VALUE;
+        if (col + 1 < n) {
+            moveRight = minPathSum(grid, row, col + 1, m, n);
+        }
+
+        int moveDown = Integer.MAX_VALUE;
+
+        if (row + 1 < m) {
+            moveDown = minPathSum(grid, row + 1, col, m, n);
+        }
+
+        return cache[row][col]=grid[row][col] + Math.min(moveRight, moveDown);
+    }
+    
+    private void intializeCache(){
+        for(int i=0;i<cache.length;i++){
+            Arrays.fill(cache[i],-1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int minPathSum(int[][] grid) {
+        int m = grid.length, n = grid[0].length;
+        // dp[row][col] represents the minimum path sum to the bottom-right corner starting from grid[row][col].
+        int[][] dp = new int[m][n];
+
+        // Base case: The minimum path sum for the bottom-right corner is the value of the cell itself.
+        dp[m - 1][n - 1] = grid[m - 1][n - 1];
+
+        for (int row = m - 2; row >= 0; row--) {
+            /*
+             * In the last column of the grid, the only possible movement is downward to reach the bottom-right corner.
+             * Therefore, dp[row][n - 1] is calculated as the current cell value plus the minimum path sum from the cell directly below.
+             */
+            dp[row][n - 1] = grid[row][n - 1] + dp[row + 1][n - 1];
+        }
+
+        for (int col = n - 2; col >= 0; col--) {
+            /*
+             * In the last row of the grid, the only possible movement is right to reach the bottom-right corner.
+             * Therefore, dp[m-1][col] is calculated as the current cell value plus the minimum path sum from the cell the cell immediately toits right.
+             */
+            dp[m - 1][col] = grid[m - 1][col] + dp[m - 1][col + 1];
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            for (int col = n - 2; col >= 0; col--) {
+                dp[row][col] = grid[row][col] + Math.min(dp[row][col + 1], dp[row + 1][col]);
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int minPathSum(int[][] grid) {
+        int m = grid.length, n = grid[0].length;
+        int[] currentRow = new int[n];
+        int[] nextRow = new int[n];
+
+        nextRow[n - 1] = grid[m - 1][n - 1];
+
+        for (int col = n - 2; col >= 0; col--) {
+            nextRow[col] = grid[m - 1][col] + nextRow[col + 1];
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            currentRow[n - 1] = grid[row][n - 1] + nextRow[n - 1];
+            for (int col = n - 2; col >= 0; col--) {
+                currentRow[col] = grid[row][col] + Math.min(currentRow[col + 1], nextRow[col]);
+            }
+
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[0];
+    }
+}
