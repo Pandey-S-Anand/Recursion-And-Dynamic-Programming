@@ -1,0 +1,97 @@
+//Bruteforce Approach
+
+class Solution {
+    public int maxSumAfterPartitioning(int[] arr, int k) {
+        return maxSumAfterPartitioning(arr, 0, k);
+    }
+
+    private int maxSumAfterPartitioning(int[] arr, int index, int k) {
+        // Base case: If we have processed the entire array, return 0
+        if (index == arr.length) {
+            return 0;
+        }
+
+        int maxSum = Integer.MIN_VALUE; // To track the maximum sum found so far
+        int maxInCurrentSubarray = Integer.MIN_VALUE; // Tracks the maximum element in the current subarray of a certain size being considered.
+
+        for (int size = 1; size <= k; size++) {
+            // Ensure the subarray size being considered is within bounds
+            if (index + size - 1 >= arr.length) {
+                break;
+            }
+
+            // Update the maximum element in the current subarray of the size being considered
+            maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
+            // Update the maximum sum obtained across all possible subarray sizes
+            maxSum = Math.max(maxSum, maxInCurrentSubarray * size + maxSumAfterPartitioning(arr, index + size, k));
+        }
+
+        return maxSum;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[] cache;
+
+    public int maxSumAfterPartitioning(int[] arr, int k) {
+        cache = new int[arr.length];
+        Arrays.fill(cache, -1);
+        return maxSumAfterPartitioning(arr, 0, k);
+    }
+
+    private int maxSumAfterPartitioning(int[] arr, int index, int k) {
+        if (index == arr.length) {
+            return 0;
+        }
+
+        if (cache[index] != -1) {
+            return cache[index];
+        }
+
+        int maxSum = Integer.MIN_VALUE;
+        int maxInCurrentSubarray = Integer.MIN_VALUE;
+
+        for (int size = 1; size <= k; size++) {
+            if (index + size - 1 >= arr.length) {
+                break;
+            }
+
+            maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
+            maxSum = Math.max(maxSum, maxInCurrentSubarray * size + maxSumAfterPartitioning(arr, index + size, k));
+        }
+
+        return cache[index] = maxSum;
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int maxSumAfterPartitioning(int[] arr, int k) {
+        int[] dp = new int[arr.length + 1];
+
+        dp[arr.length] = 0;
+
+        for (int index = arr.length - 1; index >= 0; index--) {
+            int maxSum = Integer.MIN_VALUE;
+            int maxInCurrentSubarray = Integer.MIN_VALUE;
+
+            for (int size = 1; size <= k; size++) {
+                if (index + size - 1 >= arr.length) {
+                    break;
+                }
+
+                maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
+                maxSum = Math.max(maxSum, maxInCurrentSubarray * size + dp[index + size]);
+            }
+
+            dp[index] = maxSum;
+        }
+
+        return dp[0];
+    }
+}
