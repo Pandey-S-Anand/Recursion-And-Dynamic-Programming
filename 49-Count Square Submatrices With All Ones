@@ -1,0 +1,213 @@
+//Bruteforce Approach
+
+class Solution {
+    public int countSquares(int[][] matrix) {
+        int totalSquareCount = 0;
+
+        for (int row = 0; row < matrix.length; row++) {
+            for (int col = 0; col < matrix[0].length; col++) {
+                if (matrix[row][col] == 1) {
+                    totalSquareCount += countSquaresFromCell(matrix, row, col);
+                }
+            }
+        }
+
+        return totalSquareCount;
+    }
+
+    /*
+     * It explores the longest stretch of 1's in three directions (right, diagonal down-right, and down)
+     * and determines the maximum possible square size that includes the current cell as the top-left corner.
+     */
+    private int countSquaresFromCell(int[][] matrix, int row, int col) {
+        // Base case: If we go out of bounds, return 0
+        if (row == matrix.length || col == matrix[0].length) {
+            return 0;
+        }
+        
+        // If the current cell is 0, it cannot contribute to any square submatrices starting from this position
+        if (matrix[row][col] == 0) {
+            return 0;
+        }
+
+        // Recursively count 1's in three directions
+        int rightCount = countSquaresFromCell(matrix, row, col + 1); // Count to the right
+        int diagonalCount = countSquaresFromCell(matrix, row + 1, col + 1); // Count diagonally down-right
+        int downCount = countSquaresFromCell(matrix, row + 1, col); // Count downwards
+
+        /*
+         * The total number of square submatrices that include the current cell as the top-left corner
+         * (The 1 accounts for the smallest square of size 1x1 formed by the current cell itself)
+         */
+        return 1 + Math.min(rightCount, Math.min(diagonalCount, downCount));
+    }
+}
+
+
+//Improved Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int countSquares(int[][] matrix) {
+        cache = new int[matrix.length][matrix[0].length];
+        intializeCache();
+        int totalSquareCount = 0;
+
+        for (int row = 0; row < matrix.length; row++) {
+            for (int col = 0; col < matrix[0].length; col++) {
+                if (matrix[row][col] == 1) {
+                    totalSquareCount += countSquaresFromCell(matrix, row, col);
+                }
+            }
+        }
+
+        return totalSquareCount;
+    }
+
+    private int countSquaresFromCell(int[][] matrix, int row, int col) {
+        if (row == matrix.length || col == matrix[0].length) {
+            return 0;
+        }
+
+        if (matrix[row][col] == 0) {
+            return 0;
+        }
+
+        if (cache[row][col] != -1) {
+            return cache[row][col];
+        }
+
+        int rightCount = countSquaresFromCell(matrix, row, col + 1);
+        int diagonalCount = countSquaresFromCell(matrix, row + 1, col + 1);
+        int downCount = countSquaresFromCell(matrix, row + 1, col);
+
+        return cache[row][col] = 1 + Math.min(rightCount, Math.min(diagonalCount, downCount));
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+
+//Optimal Approach
+
+//Naive Implementation
+
+class Solution {
+    public int countSquares(int[][] matrix) {
+        /*
+         * dp[i][j] represents the side length of the largest square submatrix whose
+         * bottom-right corner is at (i, j), and also represents the total count of all
+         * square submatrices that can end at that position (since squares can be of
+         * sizes 1x1, 2x2, ..., up to the largest square that ends at (i, j)).
+         */
+        int[][] dp = new int[matrix.length + 1][matrix[0].length + 1];
+        int totalSquareCount = 0;
+
+        dp[matrix.length][matrix[0].length] = 0;
+
+        for (int col = 0; col < matrix[0].length; col++) {
+            dp[matrix.length][col] = 0;
+        }
+
+        for (int row = 0; row < matrix.length; row++) {
+            dp[row][matrix[0].length] = 0;
+        }
+
+        for (int row = matrix.length - 1; row >= 0; row--) {
+            for (int col = matrix[0].length - 1; col >= 0; col--) {
+                if (matrix[row][col] == 1) {
+                    int rightCount = dp[row][col + 1];
+                    int diagonalCount = dp[row + 1][col + 1];
+                    int downCount = dp[row + 1][col];
+
+                    dp[row][col] = 1 + Math.min(rightCount, Math.min(diagonalCount, downCount));
+                    totalSquareCount += dp[row][col];
+                } else {
+                    dp[row][col] = 0;
+                }
+            }
+        }
+
+        return totalSquareCount;
+    }
+}
+
+
+//Optimal Implementation 
+
+class Solution {
+    public int countSquares(int[][] matrix) {
+        int[][] dp = new int[matrix.length + 1][matrix[0].length + 1];
+        int totalSquareCount = 0;
+
+        for (int row = matrix.length - 1; row >= 0; row--) {
+            for (int col = matrix[0].length - 1; col >= 0; col--) {
+                if (matrix[row][col] == 1) {
+                    dp[row][col] = 1 + Math.min(dp[row][col + 1], Math.min(dp[row + 1][col + 1], dp[row + 1][col]));
+                    totalSquareCount += dp[row][col];
+                }
+            }
+        }
+
+        return totalSquareCount;
+    }
+}
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int countSquares(int[][] matrix) {
+        int totalSquareCount = 0;
+
+        int[] currrentRow = new int[matrix[0].length + 1];
+        int[] nextRow = new int[matrix[0].length + 1];
+
+        for (int row = matrix.length - 1; row >= 0; row--) {
+            for (int col = matrix[0].length - 1; col >= 0; col--) {
+                if (matrix[row][col] == 1) {
+                    currrentRow[col] = 1 + Math.min(currrentRow[col + 1], Math.min(nextRow[col + 1], nextRow[col]));
+                    totalSquareCount += currrentRow[col];
+                } else {
+                    currrentRow[col] = 0;
+                }
+            }
+
+            int[] temp = currrentRow;
+            currrentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return totalSquareCount;
+    }
+}
+
+
+//Utilising the given question matrix space
+
+class Solution {
+    public int countSquares(int[][] matrix) {
+        int totalSquareCount = 0;
+
+        for (int row = matrix.length - 1; row >= 0; row--) {
+            for (int col = matrix[0].length - 1; col >= 0; col--) {
+                if (matrix[row][col] == 1) {
+                    if (row == matrix.length - 1 || col == matrix[0].length - 1) {
+                        matrix[row][col] = 1;
+                    } else {
+                        matrix[row][col] = 1 + Math.min(matrix[row][col + 1], Math.min(matrix[row + 1][col + 1], matrix[row + 1][col]));
+                    }
+
+                    totalSquareCount += matrix[row][col];
+                }
+            }
+        }
+
+        return totalSquareCount;
+    }
+}
