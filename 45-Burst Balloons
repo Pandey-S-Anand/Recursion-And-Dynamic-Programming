@@ -1,0 +1,296 @@
+//Bruteforce Approach
+
+class Solution {
+    private List<List<Integer>> balloonBurstOrders;
+
+    public int maxCoins(int[] arr) {
+        // Convert the array into a list to work with easier removal of elements
+        List<Integer> originalBalloons = new ArrayList<>();
+        for (int num : arr) {
+            originalBalloons.add(num);
+        }
+
+        // Generate all possible burst orders of the balloons
+        generatePermutations(arr);
+
+        // Variable to store the maximum coins obtained from all burst orders
+        int maxCoins = 0;
+
+        // For each burst order, calculate the total coins collected by bursting balloons in that order
+        for (List<Integer> burstOrder : balloonBurstOrders) {
+            maxCoins = Math.max(maxCoins, calculateCoins(new ArrayList<>(originalBalloons), burstOrder));
+        }
+
+        return maxCoins;
+    }
+
+    // Function to calculate the total coins collected by bursting balloons in the given burst order
+    private int calculateCoins(List<Integer> originalBalloons, List<Integer> burstOrder) {
+        int totalCoins = 0;
+
+        // Loop through each balloon in the burst order and calculate the coins for bursting it
+        for (int i = 0; i < burstOrder.size(); i++) {
+            int currentBalloon = burstOrder.get(i);
+
+            // Find the index of the current balloon in the original list
+            int indexInOriginal = originalBalloons.indexOf(currentBalloon);
+
+            // Get the left and right neighbors of the current balloon from the original list
+            int leftNeighbor = (indexInOriginal == 0) ? 1 : originalBalloons.get(indexInOriginal - 1);
+            int rightNeighbor = (indexInOriginal == originalBalloons.size() - 1) ? 1 : originalBalloons.get(indexInOriginal + 1);
+
+            // Calculate the coins collected by bursting this balloon
+            totalCoins += leftNeighbor * currentBalloon * rightNeighbor;
+
+            // Remove the balloon from the original list after it is burst
+            originalBalloons.remove(indexInOriginal);
+        }
+
+        return totalCoins;
+    }
+
+    private void generatePermutations(int[] arr) {
+        balloonBurstOrders = new ArrayList<>();
+        generatePermutations(arr, arr.length - 1);
+    }
+
+    private void generatePermutations(int[] arr, int index) {
+        if (index < 0) {
+            List<Integer> currentPermutation = new ArrayList<>();
+            for (int num : arr) {
+                currentPermutation.add(num);
+            }
+            balloonBurstOrders.add(currentPermutation);
+            return;
+        }
+
+        for (int i = index; i >= 0; i--) {
+            swap(arr, index, i);
+            generatePermutations(arr, index - 1);
+            swap(arr, index, i);
+        }
+    }
+
+    private void swap(int[] arr, int i, int j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+
+
+//Improved Approach
+
+/**
+ * To apply recursion or dynamic programming, we need to break the problem into smaller, independent subproblems.
+ * In the "Burst Balloons" problem, the objective is to maximize the coins obtained by bursting balloons in an optimal sequence.
+ * However, if we attempt to solve the problem by bursting each balloon as the first one, the subproblems created are not independent.
+ * This is because the number of coins collected from bursting a balloon depends on its neighboring balloons, and these neighbors
+ * change dynamically as other balloons are burst. This interdependency of subproblems makes it challenging to apply a straightforward
+ * recursive approach when considering each balloon as the first to burst.
+ *
+ * The critical insight for solving the "Burst Balloons" problem using recursion or dynamic programming is to change the way we think
+ * about the problem. Instead of bursting balloons in the first-to-last order, we reverse the approach and consider each balloon as the
+ * last one to burst within a subarray.
+ *
+ * When a balloon is chosen as the last to burst in its subarray, its neighbors are fixed based on the boundaries of the subarray.
+ * This makes the calculation of coins straightforward. Additionally, the two resulting subarrays ([start, ..., i-1] and [i+1, ..., end])
+ * become completely independent of each other. This independence allows the problem to be broken down into smaller, non-overlapping
+ * subproblems, making it suitable for recursion and dynamic programming.
+ */
+
+/*
+
+Note :
+
+Input: nums = [3,1,5,8] 
+Output: 167 
+Explanation: nums = [3,1,5,8] --> [3,5,8] --> [3,8] --> [8] --> [] 
+coins = 3*1*5 + 3*5*8 + 1*3*8 + 1*8*1 = 167 
+
+Suppose we know the last balloon to be burst is 8, and the second last is 3. 
+Now we are determining the third-last balloon. Suppose we choose 5 as the third-last balloon to burst.
+
+Why is 3 the neighbor on the left of 5 and not 1?
+
+Explanation:
+- Since we already know 8 will be the last balloon and 3 will be the second last, 
+  this means 1 and 5 must have already been burst earlier (as the first or second balloons to burst).
+- Therefore, when evaluating for the third-last balloon, its neighbors at that step are dynamically updated.
+  At this point, the only remaining neighbors of 5 are 3 and 8.
+- This is why 3 is considered the neighbor on the left, and 8 is the neighbor on the right.
+- Working backwards from the last balloon helps us know the exact neighbors at each step.
+- The neighbors are determined dynamically based on the balloons that have already been burst, rather than 
+  the initial configuration of the array.
+
+This approach ensures that at each step of the recursive/dynamic programming solution, we correctly account 
+for the current state of the neighbors as the array of remaining balloons shrinks.
+*/
+
+
+class Solution {
+    public int maxCoins(int[] balloons) {
+        // Start the recursive process to find the maximum coins by bursting balloons
+        return calculateMaxCoins(balloons, 0, balloons.length - 1);
+    }
+
+    // Recursive function to calculate the maximum coins obtainable in the range [start, end]
+    private int calculateMaxCoins(int[] balloons, int start, int end) {
+        // Base case: If the range is invalid (no balloons to burst)
+        if (start > end) {
+            return 0;
+        }
+
+        int maxCoins = 0;
+        /*
+         * Retrieve the values of the left and right neighbors.
+         * If the balloon is at the boundary, treat the missing neighbor as a virtual balloon with value 1.
+         */
+        int leftNeighbor = (start == 0) ? 1 : balloons[start - 1];
+        int rightNeighbor = (end == balloons.length - 1) ? 1 : balloons[end + 1];
+
+        // Try each balloon in the range [start, end] as the last one to burst
+        for (int lastBurstIndex = start; lastBurstIndex <= end; lastBurstIndex++) {
+            // Coins gained by bursting this balloon as the last one in this range
+            int currentCoins = leftNeighbor * balloons[lastBurstIndex] * rightNeighbor;
+
+            // Recursively calculate the coins for the left and right subranges
+            int coinsFromLeftSubrange = calculateMaxCoins(balloons, start, lastBurstIndex - 1);
+            int coinsFromRightSubrange = calculateMaxCoins(balloons, lastBurstIndex + 1, end);
+
+            // Total coins = currentCoins + coins from left and right subranges
+            maxCoins = Math.max(maxCoins, currentCoins + coinsFromLeftSubrange + coinsFromRightSubrange);
+        }
+
+        // Return the maximum coins obtainable in this range
+        return maxCoins;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int maxCoins(int[] balloons) {
+        cache = new int[balloons.length][balloons.length];
+        intializeCache();
+        return calculateMaxCoins(balloons, 0, balloons.length - 1);
+    }
+
+    private int calculateMaxCoins(int[] balloons, int start, int end) {
+        if (start > end) {
+            return 0;
+        }
+
+        if (cache[start][end] != -1) {
+            return cache[start][end];
+        }
+
+        int maxCoins = 0;
+        int leftNeighbor = (start == 0) ? 1 : balloons[start - 1];
+        int rightNeighbor = (end == balloons.length - 1) ? 1 : balloons[end + 1];
+
+        for (int lastBurstIndex = start; lastBurstIndex <= end; lastBurstIndex++) {
+            int currentCoins = leftNeighbor * balloons[lastBurstIndex] * rightNeighbor;
+
+            int coinsFromLeftSubrange = calculateMaxCoins(balloons, start, lastBurstIndex - 1);
+            int coinsFromRightSubrange = calculateMaxCoins(balloons, lastBurstIndex + 1, end);
+
+            maxCoins = Math.max(maxCoins, currentCoins + coinsFromLeftSubrange + coinsFromRightSubrange);
+        }
+
+        return cache[start][end] = maxCoins;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+//Optimal Approach
+
+//Naive Implementation
+
+class Solution {
+    public int maxCoins(int[] balloons) {
+        /*
+         * dp[start][end]represents the maximum number of coins that can be collected by
+         * bursting all the balloons between indices start and end in the balloons array
+         */
+        int[][] dp = new int[balloons.length][balloons.length];
+
+        for (int start = balloons.length - 1; start >= 0; start--) {
+            for (int end = 0; end < balloons.length; end++) {
+                // Base case: If start > end, it means no balloons are left to burst, hence 0 coins
+                if (start > end) {
+                    dp[start][end] = 0;
+                    continue;
+                }
+
+                int maxCoins = 0;
+                int leftNeighbor = (start == 0) ? 1 : balloons[start - 1];
+                int rightNeighbor = (end == balloons.length - 1) ? 1 : balloons[end + 1];
+
+                for (int lastBurstIndex = start; lastBurstIndex <= end; lastBurstIndex++) {
+                    int currentCoins = leftNeighbor * balloons[lastBurstIndex] * rightNeighbor;
+
+                    int coinsFromLeftSubrange = 0;
+                    if (lastBurstIndex - 1 >= 0) {
+                        coinsFromLeftSubrange = dp[start][lastBurstIndex - 1];
+                    }
+
+                    int coinsFromRightSubrange = 0;
+                    if (lastBurstIndex + 1 <= balloons.length - 1) {
+                        coinsFromRightSubrange = dp[lastBurstIndex + 1][end];
+                    }
+
+                    maxCoins = Math.max(maxCoins, currentCoins + coinsFromLeftSubrange + coinsFromRightSubrange);
+                }
+
+                dp[start][end] = maxCoins;
+            }
+        }
+
+        return dp[0][balloons.length - 1];
+    }
+}
+
+//Optimal Implementation
+
+class Solution {
+    public int maxCoins(int[] balloons) {
+        int[][] dp = new int[balloons.length][balloons.length];
+
+        for (int start = balloons.length - 1; start >= 0; start--) {
+            for (int end = start; end < balloons.length; end++) {
+                int maxCoins = 0;
+                int leftNeighbor = (start == 0) ? 1 : balloons[start - 1];
+                int rightNeighbor = (end == balloons.length - 1) ? 1 : balloons[end + 1];
+
+                for (int lastBurstIndex = start; lastBurstIndex <= end; lastBurstIndex++) {
+                    int currentCoins = leftNeighbor * balloons[lastBurstIndex] * rightNeighbor;
+
+                    int coinsFromLeftSubrange = 0;
+                    if (lastBurstIndex - 1 >= 0) {
+                        coinsFromLeftSubrange = dp[start][lastBurstIndex - 1];
+                    }
+
+                    int coinsFromRightSubrange = 0;
+                    if (lastBurstIndex + 1 <= balloons.length - 1) {
+                        coinsFromRightSubrange = dp[lastBurstIndex + 1][end];
+                    }
+
+                    maxCoins = Math.max(maxCoins, currentCoins + coinsFromLeftSubrange + coinsFromRightSubrange);
+                }
+
+                dp[start][end] = maxCoins;
+            }
+        }
+
+        return dp[0][balloons.length - 1];
+    }
+}
