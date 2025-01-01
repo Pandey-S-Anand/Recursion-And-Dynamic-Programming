@@ -1,0 +1,143 @@
+//Bruteforce Approach
+
+//Method 1
+
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        // Start from step 0 or step 1 and return the minimum cost
+        return Math.min(minCostClimbingStairs(cost, 0), minCostClimbingStairs(cost, 1));
+    }
+
+    private int minCostClimbingStairs(int[] cost, int stair) {
+        // If we reach or exceed the top, no cost is needed
+        if (stair >= cost.length) {
+            return 0;
+        }
+
+        // Add current stair cost and add minimum cost of taking 1 or 2 steps
+        return cost[stair] + Math.min(minCostClimbingStairs(cost, stair + 1), minCostClimbingStairs(cost, stair + 2));
+    }
+}
+
+
+//Method 2
+
+// The minimum cost to reach the top from the bottom is equivalent to the minimum cost to reach the bottom from the top.
+
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        // Start from the last or second last stair and find the minimum cost
+        return Math.min(minCostClimbingStairs(cost, cost.length - 1), minCostClimbingStairs(cost, cost.length - 2));
+    }
+
+    private int minCostClimbingStairs(int[] cost, int stair) {
+        // Base case: If below the first stair, no cost is required
+        if (stair < 0) {
+            return 0;
+        }
+
+        // Current stair cost + minimum cost of moving 1 or 2 steps downward
+        return cost[stair] + Math.min(minCostClimbingStairs(cost, stair - 1), minCostClimbingStairs(cost, stair - 2));
+    }
+}
+
+
+//Better Approach
+
+//Method 1
+
+class Solution {
+    private int[] cache;
+
+    public int minCostClimbingStairs(int[] cost) {
+        cache = new int[cost.length];
+        Arrays.fill(cache, -1);
+        return Math.min(minCostClimbingStairs(cost, 0), minCostClimbingStairs(cost, 1));
+    }
+
+    private int minCostClimbingStairs(int[] cost, int stair) {
+        if (stair >= cost.length) {
+            return 0;
+        }
+
+        if (cache[stair] != -1) {
+            return cache[stair];
+        }
+
+        return cache[stair] = cost[stair] + Math.min(minCostClimbingStairs(cost, stair + 1), minCostClimbingStairs(cost, stair + 2));
+    }
+}
+
+
+//Method 2
+
+class Solution {
+    private int[] cache;
+
+    public int minCostClimbingStairs(int[] cost) {
+        cache = new int[cost.length];
+        Arrays.fill(cache, -1);
+        return Math.min(minCostClimbingStairs(cost, cost.length - 1), minCostClimbingStairs(cost, cost.length - 2));
+    }
+
+    private int minCostClimbingStairs(int[] cost, int stair) {
+        if (stair <= 0) {
+            return 0;
+        }
+
+        if (cache[stair] != -1) {
+            return cache[stair];
+        }
+
+        return cache[stair] = cost[stair] + Math.min(minCostClimbingStairs(cost, stair - 1), minCostClimbingStairs(cost, stair - 2));
+    }
+}
+
+
+//Optimal Approach
+
+//Method 1
+
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        /*
+         * dp[i] will store the minimum cost needed to reach the top starting from
+         * stair 'i', where you can either move one or two steps up at each move.
+         */
+        int[] dp = new int[cost.length];
+
+        // Base case: Minimum cost to reach the top from the last stair (n-1) is the cost of that stair.
+        dp[cost.length-1] = cost[cost.length-1];   
+        // Base case: Minimum cost to reach the top from the second-to-last stair (n-2) is the cost of that stair, as you can only take a 1-step jump to reach the top.      
+        dp[cost.length-2] = cost[cost.length-2]; 
+
+        for (int stair = cost.length-3; stair >=0 ; stair--) {
+            dp[stair] = cost[stair] + Math.min(dp[stair + 1], dp[stair + 2]);
+        }
+
+        // The final result is the minimum cost to reach the top (either from the first stair or second stair)
+        return Math.min(dp[0], dp[1]);
+    }
+}
+
+//Method 2
+
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        /*
+         * dp[i] will store the minimum cost needed to reach the "ground" starting from
+         * stair i, where you can either move one or two steps down at each move.
+         */
+        int[] dp = new int[cost.length];
+
+        dp[0] = cost[0]; // Minimum cost to reach ground from stair 0
+        dp[1] = cost[1]; // Minimum cost to reach ground from stair 1
+
+        for (int stair = 2; stair < cost.length; stair++) {
+            dp[stair] = cost[stair] + Math.min(dp[stair - 1], dp[stair - 2]);
+        }
+
+        // The final result is the minimum cost to reach the ground (either from the last stair or second last)
+        return Math.min(dp[cost.length - 1], dp[cost.length - 2]);
+    }
+}
