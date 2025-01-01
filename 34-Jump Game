@@ -1,0 +1,157 @@
+/*
+ * The value arr[i] at any index i represents the maximum length of a jump
+ * you can take from that index in the forward direction only, not in the
+ * backward direction.
+ *
+ * This means:
+ * - The array arr is specifically designed to guide forward traversal.
+ * - It doesn't provide any information about how far you can jump backward.
+ */
+
+//Bruteforce Approach
+
+class Solution {
+    public boolean canJump(int[] arr) {
+        return canJump(arr, 0);
+    }
+
+    private boolean canJump(int[] arr, int index) {
+        // Base case: If the current index is the last index, return true
+        if (index == arr.length - 1) {
+            return true;
+        }
+
+        // Determine the maximum jump we can take from the current index
+        int maxJump = arr[index];
+
+        for (int jump = 1; jump <= maxJump; jump++) {
+            // If the jump goes beyond the array bounds, stop checking further
+            if (index + jump >= arr.length) {
+                break;
+            }
+
+            // Recursively check if the next index (index + jump) can lead to the last index
+            if (canJump(arr, index + jump)) {
+                return true; // If any jump leads to success, return true
+            }
+        }
+
+        // If no jumps lead to the last index, return false
+        return false;
+    }
+}
+
+
+//Improved Approach
+
+class Solution {
+    private int[] cache;
+
+    public boolean canJump(int[] arr) {
+        cache = new int[arr.length - 1];
+        Arrays.fill(cache, -1);
+        return canJump(arr, 0);
+    }
+
+    private boolean canJump(int[] arr, int index) {
+        if (index == arr.length - 1) {
+            return true;
+        }
+
+        if (cache[index] != -1) {
+            return cache[index] == 1;
+        }
+
+        int maxJump = arr[index];
+
+        for (int jump = 1; jump <= maxJump; jump++) {
+            if (index + jump >= arr.length) {
+                break;
+            }
+
+            if (canJump(arr, index + jump)) {
+                cache[index] = 1;
+                return true;
+            }
+        }
+        cache[index] = 0;
+        return false;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    public boolean canJump(int[] arr) {
+        // dp[i] indicates whether it's possible to reach the last index from index i.
+        boolean[] dp = new boolean[arr.length];
+        dp[arr.length - 1] = true;
+
+        for (int index = arr.length - 2; index >= 0; index--) {
+            int maxJump = arr[index];
+            boolean isPossible = false;
+            for (int jump = 1; jump <= maxJump; jump++) {
+                if (index + jump >= arr.length) {
+                    break;
+                }
+
+                if (dp[index + jump]) {
+                    isPossible = true;
+                    break;
+                }
+            }
+            dp[index] = isPossible;
+        }
+
+        return dp[0];
+    }
+}
+
+//Aliter
+
+class Solution {
+    public boolean canJump(int[] arr) {
+        // dp[i] indicates whether it's possible to reach the last index from index i.
+        boolean[] dp = new boolean[arr.length];
+        dp[arr.length - 1] = true;
+
+        for (int index = arr.length - 2; index >= 0; index--) {
+            for (int jump = 1; jump <= arr[index]; jump++) {
+                if (index + jump >= arr.length) {
+                    break;
+                }
+
+                if (dp[index + jump]) {
+                    dp[index] = true;
+                    break;
+                }
+            }
+        }
+
+        return dp[0];
+    }
+}
+
+
+//Optimal Approach (Greedy)
+
+class Solution {
+    public boolean canJump(int[] arr) {
+        // Variable to keep track of the maximum index we can reach
+        int maxReachableIndex = 0;
+
+        for (int index = 0; index < arr.length; index++) {
+            // If the current index is beyond the maximum reachable index, return false
+            if (index > maxReachableIndex) {
+                return false;
+            }
+            
+            // Update the maximum reachable index
+            maxReachableIndex=Math.max(maxReachableIndex,index + arr[index]);
+        }
+
+        // If the loop completes, the last index is reachable 
+        return true;
+    }
+}
