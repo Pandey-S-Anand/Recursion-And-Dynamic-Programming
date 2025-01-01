@@ -1,0 +1,169 @@
+/*
+ * This problem is inherently direction-specific because the robot starts at position (0,0)
+ * and aims to reach position (m-1, n-1). The movement is constrained to only the right and down directions.
+ * 
+ * Therefore, a forward recursion approach is required, where the recursive calls explore moving either right or down.
+ * 
+ * Backward recursion, starting from (m-1, n-1) and attempting to reach (0, 0), would be inappropriate because it implies 
+ * moving in the reverse direction (up or left), which is not allowed by the problem's constraints.
+ * 
+ * Hence, forward recursion aligns with the problem's rules and constraints, making it the ideal and correct approach.
+ */
+
+//Bruteforce Approach
+
+class Solution {
+    public int uniquePaths(int m, int n) {
+        // Start the recursive function from the top-left corner of the grid (0,0)
+        return uniquePaths(0, 0, m, n);
+    }
+
+    private int uniquePaths(int row, int col, int m, int n) {
+        // Base case: if we've reached the destination, return 1
+        if (row == m - 1 && col == n - 1) {
+            return 1;
+        }
+        /*
+         * Recursive Case:
+         * - To find the number of ways to reach the bottom-right corner (grid[m - 1][n- 1]) from the top-left corner (grid[0][0]), you have two possible moves:
+         *
+         * 1. Move right to the next cell [i][j+1]. For example, from [0][0] to [0][1].
+         * - Once you move right, we need to calculate the number of ways to reach the
+         *   bottom-right corner (grid[m - 1][n - 1]) starting from the new position [0][1].
+         *   This is done by calling `uniquePaths(row, col+1)`.
+         *
+         * 2. Move down to the next cell [i+1][j]. For example, from [0][0] to [1][0].
+         * - After moving down, we calculate the number of ways to reach the
+         *.  bottom-right corner (grid[m - 1][n - 1]) starting from [1][0].
+         *   This is done by calling `uniquePaths(row+1, col)`.
+         *
+         * After calculating the number of ways to reach the bottom-right corner from
+         * both right (uniquePaths(row, col+1)) and down (uniquePaths(row+1, col)),
+         * you add the results of these two paths. This allows you to accumulate all
+         * possible paths to the destination.
+         * Essentially, the recursive process finds all paths to the next right or down
+         * cell, and then adds the current step (right or down)
+         * to extend those paths until the bottom-right corner is reached.
+         */
+        int moveRight = 0;
+        if (col + 1 < n) {
+            // If it's possible to move right (i.e., within grid boundaries), move right and recursively calculate paths
+            moveRight = uniquePaths(row, col + 1, m, n);
+        }
+
+        int moveDown = 0;
+        if (row + 1 < m) {
+            // If it's possible to move down (i.e., within grid boundaries), move down and recursively calculate paths
+            moveDown = uniquePaths(row + 1, col, m, n);
+        }
+        
+         // Return all possible ways to reach the bottom-right corner from the current cell.
+        return moveRight + moveDown;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int uniquePaths(int m, int n) {
+        cache = new int[m][n];
+        intializeCache();
+        return uniquePaths(0, 0, m, n);
+    }
+
+    private int uniquePaths(int row, int col, int m, int n) {
+        if (row == m - 1 && col == n - 1) {
+            return 1;
+        }
+
+        if (cache[row][col] != -1) {
+            return cache[row][col];
+        }
+
+        int moveRight = 0;
+        if (col + 1 < n) {
+            moveRight = uniquePaths(row, col + 1, m, n);
+        }
+
+        int moveDown = 0;
+        if (row + 1 < m) {
+            moveDown = uniquePaths(row + 1, col, m, n);
+        }
+
+        return cache[row][col] = moveRight + moveDown;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int uniquePaths(int m, int n) {
+        // dp[row][col] represents the total number of unique paths from cell (row, col) to the bottom-right corner of the grid (m-1, n-1).
+        int[][] dp = new int[m][n];
+
+        // At the bottom-right corner (last cell), there is only one way to be there: just "stand" at that position. Initialize it to 1.
+        dp[m - 1][n - 1] = 1;
+
+        /*
+         * If you are in the last column of the grid, you can only move downward to reach the bottom-right corner.
+         * So, there is only one unique path to reach the destination from any cell in the last column.
+         */
+        for (int i = 0; i < m - 1; i++) {
+            dp[i][n - 1] = 1;
+        }
+         
+        /*
+         * If you are in the last row of the grid, you can only move right to reach the bottom-right corner.
+         * So, there is only one unique path to reach the destination from any cell in the last row.
+         */
+        for (int j = 0; j < n - 1; j++) {
+            dp[m - 1][j] = 1;
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            for (int col = n - 2; col >= 0; col--) {
+                dp[row][col] = dp[row][col + 1] + dp[row + 1][col];
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+//Aliter
+
+class Solution {
+    public int uniquePaths(int m, int n) {
+        int[] currentRow = new int[n];
+        int[] nextRow = new int[n];
+
+        nextRow[n - 1] = 1;
+
+        for (int j = 0; j < n - 1; j++) {
+            nextRow[j] = 1;
+        }
+
+        for (int row = m - 2; row >= 0; row--) {
+            currentRow[n - 1] = 1;
+            for (int col = n - 2; col >= 0; col--) {
+                currentRow[col] = currentRow[col + 1] + nextRow[col];
+            }
+
+            int[] temp = currentRow;
+            currentRow = nextRow;
+            nextRow = temp;
+        }
+
+        return nextRow[0];
+    }
+}
