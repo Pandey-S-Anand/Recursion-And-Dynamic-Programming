@@ -1,0 +1,141 @@
+//Bruteforce Approach
+
+class Solution {
+    public int maximumPoints(int arr[][], int n) {
+        // Start the recursion from the first day (day 0) with no task performed on the previous day (indicated by 3)
+        return maximumPoints(arr, n, 0, 3);
+    }
+
+    private int maximumPoints(int arr[][], int n, int day, int lastTask) {
+        // Base case: If all days are processed, return 0 as no points can be earned
+        if (day == n) {
+            return 0;
+        }
+
+        int maxMeritPoint = Integer.MIN_VALUE;
+
+        for (int task = 0; task <= 2; task++) {
+            // Skip the task if it is the same task performed on the previous day
+            if (task == lastTask) {
+                continue;
+            }
+            
+           // Add the merit points for the current task and make a recursive call for the next day, setting the current task as the last performed task
+            maxMeritPoint = Math.max(maxMeritPoint, arr[day][task] + maximumPoints(arr, n, day + 1, task));
+        }
+
+        return maxMeritPoint;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[][] cache;
+
+    public int maximumPoints(int arr[][], int n) {
+        cache = new int[n][4];
+        intializeCache();
+        return maximumPoints(arr, n, 0, 3);
+    }
+
+    private int maximumPoints(int arr[][], int n, int day, int lastTask) {
+        if (day == n) {
+            return 0;
+        }
+
+        if (cache[day][lastTask] != -1) {
+            return cache[day][lastTask];
+        }
+
+        int maxMeritPoint = Integer.MIN_VALUE;
+
+        for (int task = 0; task <= 2; task++) {
+            if (task == lastTask) {
+                continue;
+            }
+
+            maxMeritPoint = Math.max(maxMeritPoint, arr[day][task] + maximumPoints(arr, n, day + 1, task));
+        }
+
+        return cache[day][lastTask] = maxMeritPoint;
+    }
+
+    private void intializeCache() {
+        for (int i = 0; i < cache.length; i++) {
+            Arrays.fill(cache[i], -1);
+        }
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public int maximumPoints(int[][] arr, int n) {
+        /*
+         * dp[day][lastTask] represents the maximum points collected from day day to the last day 
+         * while ensuring that the task performed on day day is not the same as lastTask (the task performed on the previous day).
+         */
+        int[][] dp = new int[n][4];
+
+        // Base case: On the last day, we can pick any task except `lastTask`
+        dp[n - 1][0] = Math.max(arr[n - 1][1], arr[n - 1][2]); // If last task was 0
+        dp[n - 1][1] = Math.max(arr[n - 1][0], arr[n - 1][2]); // If last task was 1
+        dp[n - 1][2] = Math.max(arr[n - 1][0], arr[n - 1][1]); // If last task was 2
+        dp[n - 1][3] = Math.max(arr[n - 1][0], Math.max(arr[n - 1][1], arr[n - 1][2])); // No restrictions on the last day
+
+        for (int day = n - 2; day >= 0; day--) {
+            for (int lastTask = 0; lastTask <= 3; lastTask++) {
+                int maxMeritPoint = Integer.MIN_VALUE;
+                // Try all tasks except the last task
+                for (int task = 0; task <= 2; task++) {
+                    if (task == lastTask) {
+                        continue;
+                    }
+                    maxMeritPoint = Math.max(maxMeritPoint, arr[day][task] + dp[day + 1][task]);
+                }
+
+                dp[day][lastTask] = maxMeritPoint;
+            }
+        }
+
+        return dp[0][3];
+    }
+}
+
+
+//Aliter (Space optimised)
+
+class Solution {
+    public int maximumPoints(int[][] arr, int n) {
+        int[] currentDay = new int[4];
+        int[] nextDay = new int[4];
+
+        nextDay[0] = Math.max(arr[n - 1][1], arr[n - 1][2]);
+        nextDay[1] = Math.max(arr[n - 1][0], arr[n - 1][2]);
+        nextDay[2] = Math.max(arr[n - 1][0], arr[n - 1][1]);
+        nextDay[3] = Math.max(arr[n - 1][0], Math.max(arr[n - 1][1], arr[n - 1][2]));
+
+        for (int day = n - 2; day >= 0; day--) {
+            for (int lastTask = 0; lastTask <= 3; lastTask++) {
+                int maxMeritPoint = Integer.MIN_VALUE;
+                for (int task = 0; task <= 2; task++) {
+                    if (task == lastTask) {
+                        continue;
+                    }
+                    maxMeritPoint = Math.max(maxMeritPoint, arr[day][task] + nextDay[task]);
+                }
+
+                currentDay[lastTask] = maxMeritPoint;
+            }
+
+            int[] temp = currentDay;
+            currentDay = nextDay;
+            nextDay = temp;
+        }
+
+        return nextDay[3];
+    }
+}
