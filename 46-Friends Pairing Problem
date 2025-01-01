@@ -1,0 +1,175 @@
+/*
+   Friends Pairing Problem Explanation:
+
+   For a given number of friends `n`, we want to find the number of ways they can either remain single 
+   or pair up with each other.
+
+   Let's analyze the choices for the first friend (Friend 1):
+
+   Choice 1: Friend 1 remains single
+     - The remaining `n - 1` friends need to decide how to remain single or pair up.
+     - This can be counted by: countFriendsPairingsHelper(n - 1)
+
+   Choice 2: Friend 1 pairs up with any of the remaining `n - 1` friends
+     - Friend 1 has `n - 1` choices of friends to pair up with.
+     - After pairing up, there are `n - 2` friends left to decide how to remain single or pair up.
+     - This can be counted by: (n - 1) * countFriendsPairingsHelper(n - 2)
+
+   Therefore, the recurrence relation is:
+   
+   f(n) = f(n - 1) + (n - 1) * f(n - 2)
+
+   Why are we only considering Friend 1's choices?
+
+   - We are not considering permutations of friends; instead, we are counting combinations.
+   - For example, pairing Friend 1 with Friend 2 (1-2) is the same as pairing Friend 2 with Friend 1 (2-1).
+   - Hence, we avoid redundant pairings by always making choices based on Friend 1 and treating other friends symmetrically.
+   - This ensures that arrangements like 1-2-3-4, 2-3-1-4, or 3-1-2-4 are considered identical.
+
+   Example for N = 4:
+
+   Total combinations: 10
+
+   1. {1} {2} {3} {4}       (All friends remain single)
+   2. {1} {2} {3,4}         (Friend 3 and Friend 4 pair up)
+   3. {1} {2,3} {4}         (Friend 2 and Friend 3 pair up)
+   4. {1} {2,4} {3}         (Friend 2 and Friend 4 pair up)
+   5. {1,2} {3} {4}         (Friend 1 and Friend 2 pair up)
+   6. {1,2} {3,4}           (Friend 1 and Friend 2 pair up, and Friend 3 and Friend 4 pair up)
+   7. {1,3} {2} {4}         (Friend 1 and Friend 3 pair up)
+   8. {1,3} {2,4}           (Friend 1 and Friend 3 pair up, and Friend 2 and Friend 4 pair up)
+   9. {1,4} {2} {3}         (Friend 1 and Friend 4 pair up)
+   10. {1,4} {2,3}          (Friend 1 and Friend 4 pair up, and Friend 2 and Friend 3 pair up)
+*/ 
+
+//Bruteforce Approach
+
+class Solution {
+    public long countFriendsPairings(int n) {
+        return countFriendsPairingsHelper(n);
+    }
+
+    private long countFriendsPairingsHelper(int n) {
+        // Base case:
+        // If there is only 1 friend, they can only remain single (1 way).
+        // If there are 2 friends, they can either both remain single or pair up (2 ways in total).
+        if (n <= 2) {
+            return n;
+        }
+
+        // Choice 1: The first friend remains single.
+        long remainSingle = countFriendsPairingsHelper(n - 1);
+
+        // Choice 2: The first friend pairs up with any of the remaining (n-1) friends.
+        long pairUp = (n - 1) * countFriendsPairingsHelper(n - 2);
+
+        // Total ways = remain single + pair up
+        return remainSingle + pairUp;
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private long[] cache;
+
+    public long countFriendsPairings(int n) {
+        cache = new long[n + 1];
+        return countFriendsPairingsHelper(n);
+    }
+
+    private long countFriendsPairingsHelper(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        if (cache[n] != 0) {
+            return cache[n];
+        }
+
+        long remainSingle = countFriendsPairingsHelper(n - 1);
+
+        long pairUp = (n - 1) * countFriendsPairingsHelper(n - 2);
+
+        return cache[n] = remainSingle + pairUp;
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    public long countFriendsPairings(int n) {
+        if (n <= 2) {
+            return n;
+        }
+        long[] dp = new long[n + 1];
+        dp[1] = 1;
+        dp[2] = 2;
+
+        for (int friend = 3; friend <= n; friend++) {
+            long remainSingle = dp[friend - 1];
+
+            long pairUp = (friend - 1) * dp[friend - 2];
+
+            dp[friend] = remainSingle + pairUp;
+        }
+        return dp[n];
+    }
+}
+
+//Aliter (Space optimised)
+
+class Solution {
+    public long countFriendsPairings(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        long previous2 = 1;
+        long previous1 = 2;
+
+        for (int friend = 3; friend <= n; friend++) {
+            long current = previous1 + (friend - 1) * previous2;
+
+            previous2 = previous1;
+            previous1 = current;
+        }
+
+        return previous1;
+    }
+}
+
+/*
+  Code to print pairing configurations:
+
+  class Solution {
+    private List<String> pairingConfigurations;
+
+    public List<String> printFriendPairings(String friends) {
+        pairingConfigurations = new ArrayList<>();
+        printPairingsHelper(friends, "");
+        return pairingConfigurations;
+    }
+
+    private void printPairingsHelper(String remainingFriends, String currentConfiguration) {
+        // Base case: If no remaining friends, add the current configuration to the result
+        if (remainingFriends.isEmpty()) {
+            pairingConfigurations.add(currentConfiguration.trim()); // Trim to remove leading/trailing spaces
+            return;
+        }
+
+        // Case 1: The first friend remains single
+        char firstFriend = remainingFriends.charAt(0);
+        printPairingsHelper(remainingFriends.substring(1), currentConfiguration + "{" + firstFriend + "} ");
+
+        // Case 2: The first friend pairs up with any of the other remaining friends
+        for (int i = 1; i < remainingFriends.length(); i++) {
+            char secondFriend = remainingFriends.charAt(i);
+            String newRemainingFriends = remainingFriends.substring(1, i) + remainingFriends.substring(i + 1);
+            printPairingsHelper(newRemainingFriends, currentConfiguration + "{" + firstFriend + "," + secondFriend + "} ");
+        }
+    }
+}
+*/
