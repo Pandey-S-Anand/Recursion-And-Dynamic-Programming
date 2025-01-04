@@ -1,0 +1,123 @@
+//Bruteforce Approach
+
+//Naive Implementation
+
+class Solution {
+    public int getCount(int x, int y, int n) {
+        int count = 0;
+        for (int num = 1; num <= n; num++) {
+            if (canBeFormed(num, x, y)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean canBeFormed(int num, int x, int y) {
+        // Base case: if num is 0, it means we successfully formed the number
+        if (num == 0) {
+            return true;
+        }
+
+        // If num is less than 0, it's not possible to form this number
+        if (num < 0) {
+            return false;
+        }
+
+        return canBeFormed(num - x, x, y) || canBeFormed(num - y, x, y) || canBeFormed(num - (x + y), x, y);
+    }
+}
+
+// Optimal Implementation
+
+class Solution {
+    public int getCount(int x, int y, int n) {
+        int count = 0;
+        for (int num = 1; num <= n; num++) {
+            if (canBeFormed(num, x, y)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean canBeFormed(int num, int x, int y) {
+        // Base case: if num is 0, it means we successfully formed the number
+        if (num == 0) {
+            return true;
+        }
+
+        // If num is less than 0, it's not possible to form this number
+        if (num < 0) {
+            return false;
+        }
+
+        /*
+         * The recursive approach with two conditions (subtracting x and y) inherently
+         * handles the case of x + y through recursive combinations. Therefore, a third
+         * explicit condition is not necessary.
+         */
+        return canBeFormed(num - x, x, y) || canBeFormed(num - y, x, y);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    private int[] cache;
+
+    public int getCount(int x, int y, int n) {
+        cache = new int[n + 1];
+        int count = 0;
+        for (int num = 1; num <= n; num++) {
+            if (canBeFormed(num, x, y)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean canBeFormed(int num, int x, int y) {
+        if (num == 0) {
+            return true;
+        }
+
+        if (num < 0) {
+            return false;
+        }
+
+        if (cache[num] != 0) {
+            return cache[num] == 1;
+        }
+
+        cache[num] = (canBeFormed(num - x, x, y) || canBeFormed(num - y, x, y)) ? 1 : -1;
+        return cache[num] == 1;
+    }
+}
+
+
+//Optimal Approach
+
+class Solution {
+    static int getCount(int x, int y, int n) {
+        boolean[] dp = new boolean[n + 1]; // dp[i] represents whether it's possible to form the number i using any combination of x and y.
+        dp[0] = true; // Base case: 0 can always be formed by choosing zero occurrences of both x and y.
+        int count = 0;
+
+        for (int num = 1; num <= n; num++) {
+            if (num >= x && dp[num - x]) {
+                dp[num] = true;
+            }
+            if (num >= y && dp[num - y]) {
+                dp[num] = true;
+            }
+
+            if (dp[num]) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+}
