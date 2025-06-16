@@ -21,71 +21,10 @@ class Solution {
     private static final int MOD = 1000000007;
 
     public int perfectSum(int arr[], int targetSum) {
-        List<Integer> subsetSums = new ArrayList<>();
-        subsetSums.add(0); // Start with the empty subset sum (i.e 0)
-        int targetSumSubsetCount = targetSum == 0 ? 1 : 0;
-
-        for (int num : arr) {
-            int currentSize = subsetSums.size();
-            for (int i = 0; i < currentSize; i++) {
-                int newSubsetSum = num + subsetSums.get(i);
-
-                if (newSubsetSum == targetSum) {
-                    targetSumSubsetCount = (targetSumSubsetCount + 1) % MOD;
-                }
-
-                if (newSubsetSum <= targetSum) {
-                    subsetSums.add(newSubsetSum);
-                }
-            }
-        }
-
-        return targetSumSubsetCount;
-    }
-}
-
-
-//Improved Approach
-
-class Solution {
-    private static final int MOD = 1000000007;
-
-    public int perfectSum(int arr[], int targetSum) {
-        int targetSumSubsetCount = 0, newSubsetSum = 0, totalSubsets = 1 << arr.length;
-
-        for (int num = 0; num < totalSubsets; num++) {
-            for (int i = 0; i < arr.length; i++) {
-                if ((num & (1 << i)) != 0) {
-                    newSubsetSum += arr[i];
-
-                    if (newSubsetSum > targetSum) {
-                        break;
-                    }
-                }
-            }
-
-            if (newSubsetSum == targetSum) {
-                targetSumSubsetCount = (targetSumSubsetCount + 1) % MOD;
-            }
-
-            newSubsetSum = 0;
-        }
-
-        return targetSumSubsetCount;
-    }
-}
-
-
-//Good Approach
-
-class Solution {
-    private static final int MOD = 1000000007;
-
-    public static int perfectSum(int arr[], int targetSum) {
         return countSubsetsWithTargetSum(arr, 0, targetSum);
     }
 
-    private static int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
         /*
          * Base case: If we've exhauated the array (index == arr.length),
          * check if the target sum is zero. If it is, we have found a valid subset
@@ -121,15 +60,16 @@ class Solution {
 
 class Solution {
     private static final int MOD = 1000000007;
-    private static int[][] cache;
+    private int[][] cache;
 
-    public static int perfectSum(int arr[], int targetSum) {
+    public int perfectSum(int arr[], int targetSum) {
+        // cache[i][j] represents count of subsets that sum to  value j using the subarray arr[i ... arr.length - 1].
         cache = new int[arr.length][targetSum + 1];
         intializeCache();
         return countSubsetsWithTargetSum(arr, 0, targetSum);
     }
 
-    private static int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
         if (index == arr.length) {
             return targetSum == 0 ? 1 : 0;
         }
@@ -148,7 +88,7 @@ class Solution {
         return cache[index][targetSum] = (include + exclude) % MOD;
     }
     
-    private static void intializeCache() {
+    private void intializeCache() {
         for (int i = 0; i < cache.length; i++) {
             Arrays.fill(cache[i], -1);
         }
@@ -163,7 +103,7 @@ class Solution {
 class Solution {
     private static final int MOD = 1000000007;
 
-    public static int perfectSum(int arr[], int targetSum) {
+    public int perfectSum(int arr[], int targetSum) {
         // dp[i][j] indicates the count of subsets of the subarray arr[i..arr.length - 1] that sum to target 'j'
         int[][] dp = new int[arr.length + 1][targetSum + 1];
 
@@ -196,7 +136,7 @@ class Solution {
 class Solution {
     private static final int MOD = 1000000007;
 
-    public static int perfectSum(int arr[], int targetSum) {
+    public int perfectSum(int arr[], int targetSum) {
         int[][] dp = new int[arr.length + 1][targetSum + 1];
 
         dp[arr.length][0] = 1;
@@ -222,7 +162,7 @@ class Solution {
 class Solution {
     private static final int MOD = 1000000007;
 
-    public static int perfectSum(int arr[], int targetSum) {
+    public int perfectSum(int arr[], int targetSum) {
         int[] nextRow = new int[targetSum + 1];
         int[] currentRow = new int[targetSum + 1];
 
