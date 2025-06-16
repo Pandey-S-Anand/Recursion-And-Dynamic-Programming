@@ -4,68 +4,107 @@
 
 class Solution {
     public int findTargetSumWays(int[] arr, int targetSum) {
+        // Start recursive exploration from index 0 with the target sum
         return findTargetSumWays(arr, 0, targetSum);
     }
 
     private int findTargetSumWays(int[] arr, int index, int targetSum) {
+        // Base case: if all elements are processed
         if (index == arr.length) {
+            // If the final remaining sum is zero, it's a valid way
             return targetSum == 0 ? 1 : 0;
         }
 
+        /**
+        * At each index, we have two choices:
+        *   1. Assign '+' sign to arr[index] → this reduces the remaining target sum
+        *        targetSum becomes: targetSum - arr[index]
+        *
+        *   2. Assign '-' sign to arr[index] → this increases the remaining target sum
+        *        targetSum becomes: targetSum - (-arr[index]) = targetSum + arr[index]
+        *
+        * This recursion explores all such combinations and counts how many lead to
+        * a final targetSum == 0 when the end of the array is reached.
+        */
+        // Choice 1: Add '+' sign → subtract current value from targetSum
         int waysWithPositiveSign = findTargetSumWays(arr, index + 1, targetSum - arr[index]);
+
+        // Choice 2: Add '-' sign → subtract (-arr[index]) i.e., add arr[index] to targetSum
         int waysWithNegativeSign = findTargetSumWays(arr, index + 1, targetSum + arr[index]);
 
-        return (waysWithPositiveSign + waysWithNegativeSign);
+        // Total ways from current index = sum of both choices
+        return waysWithPositiveSign + waysWithNegativeSign;
     }
 }
 
 
+
 //Optimal Approach
 
-/*
-The valid range of the target sum can go from -sum(arr) to sum(arr) (since the total sum of all elements in arr (0 <= nums[i] <= 1000).
-sum(arr) is the maximum sum we can achieve by assigning all positive signs, and -sum(arr) is the minimum sum by assigning all negative signs).
-
-To avoid negative indices in the memo array, we can offset the targetSum by adding sum(arr) to it, so that the new valid range of the target becomes 0 to 2 * sum(arr).
-*/
-
 class Solution {
+    // cache[i][j] represents the number of ways to reach the sum (j - offset)  using elements from index i to end of the array.
     private int[][] cache;
 
     public int findTargetSumWays(int[] arr, int targetSum) {
         int arrSum = 0;
+
+        // Step 1: Calculate total sum of array elements
         for (int num : arr) {
             arrSum += num;
         }
 
-        cache = new int[arr.length][2 * arrSum + 1];
-        intializeCache();
+        /*
+        We are given an array of non-negative integers and asked to assign either a '+' or '-' 
+        sign to each number such that the final evaluated sum equals the given targetSum.
+        
+        Let totalSum = sum(arr) → This is the **maximum sum** we can achieve if all elements are given a '+' sign.
+        The **minimum sum** is then -totalSum → if all elements are assigned a '-' sign.
+        
+        Therefore, the range of valid targetSum values lies within:
+            targetSum ∈ [-totalSum, totalSum]
+        
+        ------------------------------------------------------------
+        ❓ Why do we check: Math.abs(targetSum) > totalSum
+        
+        If the absolute value of targetSum exceeds totalSum, then:
+        1. Case: targetSum < -totalSum  
+           → Even if we assign '+' to every remaining element, we can’t bring the sum back to 0.
+           → It is **impossible** to achieve such a target.
+        
+        2. Case: targetSum > totalSum  
+           → Even if we assign '-' to every remaining element, we still can’t reduce the sum to 0.
+           → So again, it's **impossible** to reach this target.
+        
+        Hence, when |targetSum| > totalSum, we return 0 directly — as no valid assignment of signs can achieve such a target.
+        
+        ------------------------------------------------------------
+        🧠 Why do we apply an offset to targetSum in memoization?
+        
+        Since targetSum can take **negative values**, we can't directly use it as an index in the memoization table (`cache[][]`), 
+        because array indices must be non-negative.
+        
+        To solve this, we shift the entire targetSum range by an offset:
+            offset = totalSum
+        
+        Now the targetSum range:
+            [-totalSum, totalSum] → becomes → [0, 2 * totalSum]
+        
+        So any targetSum `t` is stored in cache using:
+            cache[index][t + offset]
+        
+        This technique ensures we avoid negative indices while preserving the full range of valid sums.
+        */
+        cache = new int[arr.length][(2 * arrSum) + 1]; // size = (n x (2*sum + 1))
+        initializeCache();
+
         return findTargetSumWays(arr, 0, targetSum, arrSum);
     }
 
     private int findTargetSumWays(int[] arr, int index, int targetSum, int offset) {
-        /*
-         * 
-         * Scenarios where the Condition Applies:
-         * 
-         * Array: nums = [1, 2, 3, 4] // total sum = 10
-         * Valid sum range: [-10, 10]
-         * 1. Initial Negative Target Sum:
-         * 
-         * Target Sum: -6
-         * 
-         * 
-         * However, if we only use '-' signs, the target sum could go out of bounds (e.g., -16).
-         * Therefore, there’s no way to achieve -16.
-         * 
-         * 2. Initial Positive Target Sum:
-         * 
-         * Target Sum: 6
-         * 
-         * If we only use '+' signs, the target sum could exceed the bounds (e.g., 16).
-         * Thus, there’s no way to achieve 16.
+        /* 
+         Pruning: If current targetSum is outside the valid range [-offset, +offset],
+         there's no way to achieve it (i.e reduce it to zero) by adding or subtracting future elements
          */
-
         if (Math.abs(targetSum) > offset) {
             return 0;
         }
@@ -81,18 +120,33 @@ class Solution {
         int waysWithPositiveSign = findTargetSumWays(arr, index + 1, targetSum - arr[index], offset);
         int waysWithNegativeSign = findTargetSumWays(arr, index + 1, targetSum + arr[index], offset);
 
-        return cache[index][targetSum + offset] = (waysWithPositiveSign + waysWithNegativeSign);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return cache[index][targetSum + offset] = waysWithPositiveSign + waysWithNegativeSign;
     }
 }
 
 
+
 //Method 2
+
+/*
+This problem can be **reduced to the classic "partition into subsets with a given difference" problem**.
+
+We are allowed to assign '+' or '-' signs to each number in the array to build expressions.
+At the end of the array (i.e., index == arr.length), if the running sum equals the target, it represents a valid expression.
+
+Example:
+    Expression: -1 + 2 - 3 + 4 - 7 + 4 = -1
+    This can be viewed as partitioning the array into two subsets:
+        S1 (with positive signs): (2 + 4 + 4) = 10
+        S2 (with negative signs): (1 + 3 + 7) = 11
+
+    So: S1 - S2 = 10 - 11 = -1 → which equals the target
+
+Hence, the problem is equivalent to finding the number of ways to **partition the array into two subsets S1 and S2** such that:
+    S1 - S2 = target
+
+This directly maps to the subset partition problem with a given difference.
+*/
 
 //Bruteforce Approach
 
@@ -102,104 +156,7 @@ class Solution {
     }
 
     private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
-
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
-            return 0;
-        }
-
-        return countSubsetsWithTargetSum(arr, (arrSum - d) / 2);
-    }
-
-    private int countSubsetsWithTargetSum(int[] arr, int targetSum) {
-        List<Integer> subsetSums = new ArrayList<>();
-        subsetSums.add(0); // Start with the empty subset sum (i.e 0)
-        int targetSumSubsetCount = targetSum == 0 ? 1 : 0;
-
-        for (int num : arr) {
-            int currentSize = subsetSums.size();
-            for (int i = 0; i < currentSize; i++) {
-                int newSubsetSum = num + subsetSums.get(i);
-
-                if (newSubsetSum == targetSum) {
-                    targetSumSubsetCount++;
-                }
-
-                if (newSubsetSum <= targetSum) {
-                    subsetSums.add(newSubsetSum);
-                }
-            }
-        }
-
-        return targetSumSubsetCount;
-    }
-}
-
-
-//Improved Approach 
-
-class Solution {
-    public int findTargetSumWays(int[] arr, int targetSum) {
-        return countPartitions(arr, targetSum);
-    }
-
-    private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
-
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
-            return 0;
-        }
-
-        return countSubsetsWithTargetSum(arr, (arrSum - d) / 2);
-    }
-
-    private int countSubsetsWithTargetSum(int[] arr, int targetSum) {
-        int targetSumSubsetCount = 0, newSubsetSum = 0, totalSubsets = 1 << arr.length;
-
-        for (int num = 0; num < totalSubsets; num++) {
-            for (int i = 0; i < arr.length; i++) {
-                if ((num & (1 << i)) != 0) {
-                    newSubsetSum += arr[i];
-
-                    if (newSubsetSum > targetSum) {
-                        break;
-                    }
-                }
-            }
-
-            if (newSubsetSum == targetSum) {
-                targetSumSubsetCount = (targetSumSubsetCount + 1);
-            }
-
-            newSubsetSum = 0;
-        }
-
-        return targetSumSubsetCount;
-    }
-}
-
-
-//Good Apprroach
-
-class Solution {
-    public int findTargetSumWays(int[] arr, int targetSum) {
-        return countPartitions(arr, targetSum);
-    }
-
-    private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
+        int arrSum = Arrays.stream(arr).sum();
 
         if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
             return 0;
@@ -225,7 +182,7 @@ class Solution {
 }
 
 
-//Better Approach
+//Better approach
 
 class Solution {
     private int[][] cache;
@@ -235,11 +192,7 @@ class Solution {
     }
 
     private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
+        int arrSum = Arrays.stream(arr).sum();
 
         if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
             return 0;
@@ -249,7 +202,7 @@ class Solution {
         cache = new int[arr.length][targetSum + 1];
         intializeCache();
 
-        return countSubsetsWithTargetSum(arr, 0, (arrSum - d) / 2);
+        return countSubsetsWithTargetSum(arr, 0, targetSum);
     }
 
     private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
@@ -279,7 +232,7 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Optimal approach
 
 class Solution {
     public int findTargetSumWays(int[] arr, int targetSum) {
@@ -287,62 +240,17 @@ class Solution {
     }
 
     private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
+        int arrSum = Arrays.stream(arr).sum();
 
         if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
             return 0;
         }
 
-        return countSubsetsWithTargetSum(arr, (arrSum - d) / 2);
+        int targetSum = (arrSum - d) / 2;
+        return countSubsetsWithTargetSum(arr, targetSum);
     }
 
-    private int countSubsetsWithTargetSum(int[] arr, int targetSum) {
-        int[][] dp = new int[arr.length + 1][targetSum + 1];
-
-        dp[arr.length][0] = 1;
-
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = 0; sum <= targetSum; sum++) {
-                int include = 0;
-                if (sum >= arr[index]) {
-                    include = dp[index + 1][sum - arr[index]];
-                }
-                int exclude = dp[index + 1][sum];
-                dp[index][sum] = (include + exclude);
-            }
-        }
-
-        return dp[0][targetSum];
-    }
-}
-
-
-//Aliter (space optimised)
-
-class Solution {
-    public int findTargetSumWays(int[] arr, int targetSum) {
-        return countPartitions(arr, targetSum);
-    }
-
-    private int countPartitions(int[] arr, int d) {
-        int arrSum = 0;
-
-        for (int val : arr) {
-            arrSum += val;
-        }
-
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
-            return 0;
-        }
-
-        return countSubsetsWithTargetSum(arr, (arrSum - d) / 2);
-    }
-
-    private int countSubsetsWithTargetSum(int[] arr, int targetSum) {
+    private int countSubsetsWithTargetSum(int arr[], int targetSum) {
         int[] nextRow = new int[targetSum + 1];
         int[] currentRow = new int[targetSum + 1];
 
