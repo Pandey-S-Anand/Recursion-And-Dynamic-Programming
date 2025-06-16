@@ -106,17 +106,7 @@ class Solution {
     public int maxProfit(int[] prices) {
         /*
         * dp[day][holdStock] represents the maximum profit achievable starting from
-        * day 'day' to the last trading day (prices.length - 1), given the current stock holding status:
-        *
-        * - If holdStock == 0: This means we do NOT currently hold a stock, so we have the option to BUY today.
-        *   Choices:
-        *     1. Buy the stock: Subtract today's price (as a cost), move to next day in state holdStock = 1.
-        *     2. Skip buying: Remain in holdStock = 0, move to next day.
-        *
-        * - If holdStock == 1: This means we ALREADY hold a stock, so we can choose to SELL or HOLD.
-        *   Choices:
-        *     1. Sell the stock: Add today's price (as revenue), move to next day in state holdStock = 0.
-        *     2. Skip selling: Remain in holdStock = 1, move to next day.
+        * day 'day' to the last trading day (prices.length - 1), given the current stock holding status
         */
         int[][] dp = new int[prices.length + 1][2];
 
