@@ -41,9 +41,10 @@ class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
+    // cache[pieceLength][rodLength] stores the maximum total revenue you can generate by cutting a rod of length rodLength using only pieces of length pieceLength or greater.
     private int[][] cache;
     
     public int cutRod(int price[]) {
@@ -53,16 +54,10 @@ class Solution {
     }
 
     private int cutRod(int[] price, int pieceLength, int rodLength) {
-        // Base case: If the rod length is zero, no revenue can be generated.
         if (rodLength == 0) {
             return 0;
         }
 
-        /*
-         * Base case: If we've exhausted all possible piece lengths but still have some
-         * length of rod remaining, return a negative value (Integer.MIN_VALUE) to
-         * indicate that no valid cut can be made to use up the remaining rod length.
-         */
         if (pieceLength > price.length) {
             return Integer.MIN_VALUE;
         }
@@ -71,22 +66,16 @@ class Solution {
             return cache[pieceLength][rodLength];
         }
 
-        // Option 1: Exclude the current piece length and move to the next piece length
         int exclude = cutRod(price, pieceLength + 1, rodLength);
         int include = Integer.MIN_VALUE;
 
         if (rodLength >= pieceLength) {
-            /*
-             * Option 2: Include the current piece length if it fits into the remaining rod
-             * length. Recursively attempt to cut the rod again using the same piece length
-             * to maximize the total value.
-             */
             include = cutRod(price, pieceLength, rodLength - pieceLength);
             if (include != Integer.MIN_VALUE) {
-                include += price[pieceLength - 1]; // If it's possible to include the current piece, add its value to the total
+                include += price[pieceLength - 1];
             }
         }
-        // Return the maximum value between including and excluding the current piece length
+
         return cache[pieceLength][rodLength] = Math.max(include, exclude);
     }
     
@@ -98,25 +87,19 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
 //Naive Implementation 
 
 class Solution {
     public int cutRod(int price[]) {
-         //dp[i][j] represents the maximum revenue that can be obtained by cutting a rod of length j using piece lengths starting from i to price.length.
+         // dp[pieceLength][rodLength] stores the maximum total revenue you can generate by cutting a rod of length rodLength using only pieces of length pieceLength or greater.
         int[][] dp = new int[price.length + 2][price.length + 1];
         
-        // Base case: If the rod length is zero, no revenue can be generated.
         for (int pieceLength = 0; pieceLength <= price.length; pieceLength++) {
             dp[pieceLength][0] = 0;
         }
         
-        /*
-         * Base case: If we've exhausted all possible piece lengths but still have some
-         * length of rod remaining, return a negative value (Integer.MIN_VALUE) to
-         * indicate that no valid cut can be made to use up the remaining rod length.
-         */
         for (int rodLength = 1; rodLength <= price.length; rodLength++) {
             dp[price.length][rodLength] = Integer.MIN_VALUE;
         }
@@ -173,7 +156,7 @@ class Solution {
 }
 
 
-//Aliter (space optimised)
+//Optimal approach
 
 class Solution {
     public int cutRod(int price[]) {
