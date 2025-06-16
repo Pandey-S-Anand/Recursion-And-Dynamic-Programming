@@ -56,7 +56,7 @@ class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
     private static final int MOD = 1000000007;
@@ -96,7 +96,7 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
 //Naive Implementation
 
@@ -157,7 +157,7 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal approach 
 
 class Solution {
     private static final int MOD = 1000000007;
