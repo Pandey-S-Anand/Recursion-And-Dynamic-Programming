@@ -2,12 +2,14 @@
 
 class Solution {
     public int maxProfit(int[] prices) {
-        int maxProfit = 0;
+        int maxProfit = 0; // Stores the maximum profit found so far
 
+        // Try every possible buy day
         for (int buyDay = 0; buyDay < prices.length; buyDay++) {
+            // For each buy day, try every possible future sell day
             for (int sellDay = buyDay + 1; sellDay < prices.length; sellDay++) {
-                int profit = prices[sellDay] - prices[buyDay];
-                maxProfit = Math.max(maxProfit, profit);
+                int profit = prices[sellDay] - prices[buyDay]; // Calculate profit for this pair
+                maxProfit = Math.max(maxProfit, profit); // Update maxProfit if this one is better
             }
         }
 
@@ -20,14 +22,26 @@ class Solution {
 
 class Solution {
     public int maxProfit(int[] prices) {
-        int maxProfit = 0, lowestPriceSoFar = prices[0];
+        // Initialize maxProfit to 0 as initially we have made no transactions
+        int maxProfit = 0;
 
+        // Keep track of the lowest stock price seen so far starting with day 0
+        int lowestPriceSoFar = prices[0];
+
+        // Start from day 1 because we assume buying at day 0 first
         for (int currentDay = 1; currentDay < prices.length; currentDay++) {
+
+            // Calculate the profit if we sell on currentDay after buying at lowestPriceSoFar
             int profit = prices[currentDay] - lowestPriceSoFar;
+
+            // Update maxProfit if this profit is greater than previously recorded maxProfit
             maxProfit = Math.max(maxProfit, profit);
+
+            // Update lowestPriceSoFar if current day's price is lower
             lowestPriceSoFar = Math.min(lowestPriceSoFar, prices[currentDay]);
         }
 
+        // Return the maximum profit that can be achieved with one transaction
         return maxProfit;
     }
 }
