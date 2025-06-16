@@ -40,9 +40,10 @@ class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
+    //cache[index][amount] stores the number of distinct ways to make up amount using coins from index 'index' to the end (coins[index...n-1]), where n = coins.length.
     private int[][] cache;
 
     public int change(int amount, int[] coins) {
@@ -82,13 +83,13 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
 //Naive Implementation
 
 class Solution {
     public int change(int amount, int[] coins) {
-        //dp[i][j] represents the number of combinations possible to make up the amount 'j' using the first 'i' coins from the coins array. i.e coins[i...coins.length - 1]
+        //dp[index][amount] stores the number of distinct ways to make up amount using coins from index 'index' to the end (coins[index...n-1]), where n = coins.length.
         int[][] dp = new int[coins.length + 1][amount + 1];
 
         dp[coins.length][0] = 1;
@@ -123,7 +124,6 @@ class Solution {
 
 class Solution {
     public int change(int amount, int[] coins) {
-        //dp[i][j] represents the number of combinations possible to make up the amount 'j' using the first 'i' coins from the coins array. i.e coins[i...coins.length - 1]
         int[][] dp = new int[coins.length + 1][amount + 1];
 
         for (int index = 0; index <= coins.length; index++) {
@@ -148,7 +148,7 @@ class Solution {
 }
 
 
-//Aliter (space optimised)
+//Optimal approach
 
 class Solution {
     public int change(int amount, int[] coins) {
