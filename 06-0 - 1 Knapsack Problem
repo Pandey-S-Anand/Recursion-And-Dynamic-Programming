@@ -29,9 +29,10 @@ public class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 public class Solution {
+    // cache[i][j] represents the maximum value that can be obtained by choosing items from the subarray [i...n-1] with remaining capacity j.
     private static int[][] cache;
 
     static int knapsack(int[] weight, int[] value, int n, int maxWeight) {
@@ -66,13 +67,13 @@ public class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
-//Naive Implementation
+//Naive implementation 
 
 public class Solution {
     static int knapsack(int[] weight, int[] value, int n, int maxWeight) {
-        // dp[i][j] represents the maximum value achievable using the first i items (i.e., arr[i...n - 1]) within a knapsack capacity of j.
+        // dp[i][j] represents the maximum value that can be obtained by choosing items from the subarray [i...n-1] with remaining capacity j.
         int[][] dp = new int[n + 1][maxWeight + 1];
 
         for (int capacity = 0; capacity <= maxWeight; capacity++) {
@@ -125,7 +126,7 @@ public class Solution {
 }
 
 
-//Aliter (space optimised)
+//Optimal approach
 
 public class Solution {
     static int knapsack(int[] weight, int[] value, int n, int maxWeight) {
