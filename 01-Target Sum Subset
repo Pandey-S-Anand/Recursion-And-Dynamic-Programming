@@ -1,125 +1,11 @@
 //Bruteforce Approach
 
-//Naive Implementation 
-
 class Solution {
-    static Boolean isSubsetSum(int n, int arr[], int targetSum) {
-        return hasSubsetWithTargetSum(arr, n, targetSum);
-    }
-
-    private static boolean hasSubsetWithTargetSum(int[] arr, int n, int targetSum) {
-        List<List<Integer>> subsets = new ArrayList<>();
-        subsets.add(new ArrayList<>());
-
-        for (int i = 0; i < n; i++) {
-            int size = subsets.size();
-            for (int j = 0; j < size; j++) {
-                List<Integer> currentSubset = new ArrayList<>(subsets.get(j));
-                currentSubset.add(arr[i]);
-                if (findSubsetSum(currentSubset) == targetSum) {
-                    return true;
-                }
-                subsets.add(currentSubset);
-            }
-        }
-
-        return false;
-    }
-
-    private static int findSubsetSum(List<Integer> subset) {
-        int subsetSum = 0;
-        for (int val : subset) {
-            subsetSum += val;
-        }
-        return subsetSum;
-    }
-}
-
-
-//Optimal Implementation 
-
-class Solution {
-    static Boolean isSubsetSum(int n, int arr[], int targetSum) {
-        return hasSubsetWithTargetSum(arr, n, targetSum);
-    }
-
-    private static boolean hasSubsetWithTargetSum(int[] arr, int n, int targetSum) {
-        // Set to store the sums of all subsets found so far, starting with the empty subset sum of 0
-        Set<Integer> subsetsSum = new HashSet<>();
-        subsetsSum.add(0);
-
-        for (int i = 0; i < n; i++) {
-            Set<Integer> existingSubsetsSum = new HashSet<>(subsetsSum);
-            for (int subsetSum : existingSubsetsSum) {
-                int newSubsetSum = subsetSum + arr[i];
-
-                if (newSubsetSum == targetSum) {
-                    return true;
-                }
-                /*
-                 * Add the new subset sum to the set if it is less than the target sum
-                 * This helps keep track of all valid subset sums that could potentially match the target.
-                 */
-
-                if (newSubsetSum < targetSum) {
-                    subsetsSum.add(newSubsetSum);
-                }
-            }
-        }
-
-        return false;
-    }
-}
-
-
-
-//Improved Approach
-
-class Solution {
-    static Boolean isSubsetSum(int n, int arr[], int targetSum) {
-        return hasSubsetWithTargetSum(arr, n, targetSum);
-    }
-
-    private static boolean hasSubsetWithTargetSum(int[] arr, int n, int targetSum) {
-        int currentSubsetSum = 0;
-        int totalSubsets = 1 << n; // x << y = x * 2^n
-
-        for (int num = 0; num < totalSubsets; num++) {
-            for (int i = 0; i < n; i++) {
-                if ((num & (1 << i)) != 0) {
-                    currentSubsetSum += arr[i];
-
-                    /*
-                     * If current subset sum exceeds targetSum, no need to continue
-                     * Since the array only contains positive elements, further additions will never give the desired target
-                     */
-                    if (currentSubsetSum > targetSum) {
-                        break;
-                    }
-                }
-            }
-
-            if (currentSubsetSum == targetSum) {
-                return true;
-            }
-
-            currentSubsetSum = 0;
-        }
-
-        return false;
-    }
-}
-
-
-
-//Good Approach
-
-class Solution {
-    static Boolean isSubsetSum(int arr[], int targetSum) {
+    Boolean isSubsetSum(int arr[], int targetSum) {
         return hasSubsetWithTargetSum(arr, 0, targetSum);
     }
 
-    private static boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+    private boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
         /*
          * Base case: If we've exhauated the array (index == arr.length),
          * check if the target sum is zero. If it is, we have found a valid subset
@@ -149,18 +35,19 @@ class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
-    private static int[][] cache;
+    private int[][] cache;
 
-    static Boolean isSubsetSum(int arr[], int targetSum) {
+    Boolean isSubsetSum(int arr[], int targetSum) {
+        // cache[i][j] represents whether it is possible to achieve a sum of j using the subarray arr[i ... arr.length - 1].
         cache = new int[arr.length][targetSum + 1];
         intializeCache();
         return hasSubsetWithTargetSum(arr, 0, targetSum);
     }
 
-    private static boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+    private boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
         if (index == arr.length) {
             return targetSum == 0;
         }
@@ -178,7 +65,7 @@ class Solution {
         return cache[index][targetSum] == 1;
     }
 
-    private static void intializeCache() {
+    private void intializeCache() {
         for (int i = 0; i < cache.length; i++) {
             Arrays.fill(cache[i], -1);
         }
@@ -186,12 +73,12 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
 //Naive Implementation
 
 class Solution {
-    static Boolean isSubsetSum(int arr[], int targetSum) {
+    Boolean isSubsetSum(int arr[], int targetSum) {
         // dp[i][j] represents whether it is possible to achieve a target sum of j using the subarray [i..arr.length-1]
         boolean[][] dp = new boolean[arr.length+1][targetSum + 1];
 
@@ -202,7 +89,7 @@ class Solution {
         }
 
         for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = targetSum; sum >= 0; sum--) {
+            for (int sum = 0; sum <= targetSum; sum++) {
                 if (sum >= arr[index] && dp[index + 1][sum - arr[index]]) {
                     dp[index][sum] = true;
                 } else {
@@ -219,13 +106,13 @@ class Solution {
 //Optimal Implementation 
 
 class Solution {
-    static Boolean isSubsetSum(int arr[], int targetSum) {
+    Boolean isSubsetSum(int arr[], int targetSum) {
         boolean[][] dp = new boolean[arr.length+1][targetSum + 1];
 
         dp[arr.length][0] = true;
 
         for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = targetSum; sum >= 0; sum--) {
+            for (int sum = 0; sum <= targetSum; sum++) {
                 if (sum >= arr[index] && dp[index + 1][sum - arr[index]]) {
                     dp[index][sum] = true;
                 } else {
@@ -233,7 +120,7 @@ class Solution {
                 }
             }
 
-            // Early exit: If targetSum is achievable at this point, return true immediately.
+             // Early exit: If targetSum is achievable at this point, return true immediately.
             if(dp[index][targetSum]){
                 return true;
             }
@@ -244,59 +131,32 @@ class Solution {
 }
 
 
-//Aliter (Space optimized)
+//Optimal approach
 
 class Solution {
-    static Boolean isSubsetSum(int arr[], int targetSum) {
-        boolean[] currentRow = new boolean[targetSum + 1];
+    Boolean isSubsetSum(int arr[], int targetSum) {
         boolean[] nextRow = new boolean[targetSum + 1];
+        boolean[] currentRow = new boolean[targetSum + 1];
 
         nextRow[0] = true;
 
         for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = targetSum; sum >= 0; sum--) {
+            for (int sum = 0; sum <= targetSum; sum++) {
                 if (sum >= arr[index] && nextRow[sum - arr[index]]) {
                     currentRow[sum] = true;
                 } else {
                     currentRow[sum] = nextRow[sum];
                 }
             }
-            
-            if(currentRow[targetSum]){
+
+            // Early exit: If targetSum is achievable at this point, return true immediately.
+            if (currentRow[targetSum]) {
                 return true;
             }
 
             boolean[] temp = currentRow;
             currentRow = nextRow;
             nextRow = temp;
-        }
-
-        return nextRow[targetSum];
-    }
-}
-
-
-//Aliter (further space optimised)
-
-class Solution {
-    static Boolean isSubsetSum(int arr[], int targetSum) {
-        boolean[] currentRow = new boolean[targetSum + 1];
-        boolean[] nextRow = new boolean[targetSum + 1];
-        
-        nextRow[0] = true;
-
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = targetSum; sum >= 0; sum--) {
-                if (sum >= arr[index] && nextRow[sum - arr[index]]) {
-                    nextRow[sum] = true;
-                } else {
-                    nextRow[sum] = nextRow[sum];
-                }
-            }
-            
-            if(nextRow[targetSum]){
-                return true;
-            }
         }
 
         return nextRow[targetSum];
