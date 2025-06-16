@@ -56,9 +56,10 @@ class Solution {
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
+    //cache[index][amount] stores the minimum number of coins required to form the remaining amount using coins from index to coins.length - 1.
     private int[][] cache;
 
     public int coinChange(int[] coins, int amount) {
@@ -102,12 +103,13 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
 //Naive Implementation 
 
 class Solution {
     public int coinChange(int[] coins, int amount) {
+         //dp[index][amount] stores the minimum number of coins required to form the remaining amount using coins from index to coins.length - 1.
         int[][] dp = new int[coins.length + 1][amount + 1];
 
         for (int index = 0; index <= coins.length; index++) {
@@ -174,7 +176,7 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal approach
 
 class Solution {
     public int coinChange(int[] coins, int amount) {
