@@ -1,36 +1,74 @@
 //Bruteforce Approach
 
 class Solution {
-    Boolean isSubsetSum(int arr[], int targetSum) {
-        return hasSubsetWithTargetSum(arr, 0, targetSum);
+    static Boolean isSubsetSum(int arr[], int sum) {
+        // We start from index 0 and try to form the target sum
+        return isSubsetSum(arr, 0, sum);
     }
 
-    private boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+    /*
+    * Core Idea (Brute Force Recursion):
+    * ----------------------------------
+    * In subset problems, for every element we always have two choices:
+    * 1. Take the current element
+    * 2. Do NOT take the current element
+    *
+    * So for each index, we explore both possibilities recursively.
+    *
+    * This recursive call represents:
+    * "Can we achieve the targetSum using elements from current index to end?"
+    */
+    private static Boolean isSubsetSum(int arr[], int index, int targetSum) {
         /*
-         * Base case: If we've exhauated the array (index == arr.length),
-         * check if the target sum is zero. If it is, we have found a valid subset
-         * that adds up to the target sum, so return true. Otherwise, 
-         * return false to indicate no valid subset was found for this path.
+         * Base Case 1:
+         * If we have reached the end of the array,
+         * we check whether we were able to form the target sum.
+         *
+         * If targetSum == 0 → valid subset found
+         * Else → no valid subset
          */
         if (index == arr.length) {
             return targetSum == 0;
         }
-        
-         /*
-         * If the current element is greater than the target sum, we cannot include it in the subset.
-         * Including this element would reduce the target sum to a negative value, which is not achievable.
-         * According to the problem constraints, both the array elements and the target
-         * sum are positive.Therefore, once the target sum becomes negative, it cannot return to a
-         * non-negative value, so this path can safely be ignored.
-         * This check prevents unnecessary recursive calls, improving the efficiency of the algorithm.
+
+        /*
+         * Base Case 2:
+         * If targetSum becomes 0 at any point,
+         * we have successfully found a subset.
+         *
+         * No need to explore further.
          */
-        // Option 1: Include the current element (only if it's not greater than the targetSum)
-        if (targetSum >= arr[index] && hasSubsetWithTargetSum(arr, index + 1, targetSum - arr[index])) {
-           return true;
+        if (targetSum == 0) {
+            return true;
         }
 
-        // Option 2: Exclude the current element
-        return hasSubsetWithTargetSum(arr, index + 1, targetSum);
+        /*
+         * Choice 1: Take the current element
+         * ----------------------------------
+         * We can only take the element if it does not exceed the remaining targetSum.
+         *
+         * If we take it:
+         *   - Reduce targetSum by arr[index]
+         *   - Move to next index
+         *
+         * If this path returns true, we immediately return true.
+         *
+         * Note:
+         * If arr[index] > targetSum, we skip the "take" option,
+         * since all elements and targetSum are positive.
+         * Including it would make targetSum negative,
+         * and it cannot become non-negative again.
+         */
+        if (targetSum >= arr[index] && isSubsetSum(arr, index + 1, targetSum - arr[index])) {
+            return true;
+        }
+
+        /*
+         * Choice 2: Do NOT take the current element
+         * -----------------------------------------
+         * Just move to the next index, targetSum remains unchanged
+         */
+        return isSubsetSum(arr, index + 1, targetSum);
     }
 }
 
@@ -38,37 +76,45 @@ class Solution {
 //Improved Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[index][targetSum] stores whether we can form targetSum
+    * using elements from index → end.
+    *
+    * Meaning of values:
+    * - null  → this state has NOT been computed yet
+    * - true  → targetSum is achievable from this state
+    * - false → targetSum is NOT achievable from this state
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation in future calls.
+    */
+    private static Boolean[][] dp;
 
-    Boolean isSubsetSum(int arr[], int targetSum) {
-        // cache[i][j] represents whether it is possible to achieve a sum of j using the subarray arr[i ... arr.length - 1].
-        cache = new int[arr.length][targetSum + 1];
-        intializeCache();
-        return hasSubsetWithTargetSum(arr, 0, targetSum);
+    static Boolean isSubsetSum(int arr[], int sum) {
+        dp = new Boolean[arr.length][sum + 1];
+        return isSubsetSum(arr, 0, sum);
     }
 
-    private boolean hasSubsetWithTargetSum(int[] arr, int index, int targetSum) {
+    private static Boolean isSubsetSum(int arr[], int index, int targetSum) {
         if (index == arr.length) {
             return targetSum == 0;
         }
 
-        if (cache[index][targetSum] != -1) {
-            return cache[index][targetSum] == 1;
-        }
-
-        if (targetSum >= arr[index] && hasSubsetWithTargetSum(arr, index + 1, targetSum - arr[index])) {
-            cache[index][targetSum] = 1;
+        if (targetSum == 0) {
             return true;
         }
 
-        cache[index][targetSum] = hasSubsetWithTargetSum(arr, index + 1, targetSum) ? 1 : 0;
-        return cache[index][targetSum] == 1;
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
+        if (dp[index][targetSum] != null) {
+            return dp[index][targetSum];
         }
+
+        if (targetSum >= arr[index] && isSubsetSum(arr, index + 1, targetSum - arr[index])) {
+            return dp[index][targetSum] = true;
+        }
+
+        return dp[index][targetSum] = isSubsetSum(arr, index + 1, targetSum);
     }
 }
 
@@ -78,23 +124,34 @@ class Solution {
 //Naive Implementation
 
 class Solution {
-    Boolean isSubsetSum(int arr[], int targetSum) {
-        // dp[i][j] represents whether it is possible to achieve a target sum of j using the subarray [i..arr.length-1]
-        boolean[][] dp = new boolean[arr.length+1][targetSum + 1];
+    static Boolean isSubsetSum(int arr[], int targetSum) {
+        /*
+        * dp[i][sum] represents:
+        * "Can we form the target sum = sum using elements from index i to n-1?"
+        */
+        boolean[][] dp = new boolean[arr.length + 1][targetSum + 1];
 
         dp[arr.length][0] = true;
 
-        for (int sum = targetSum; sum > 0; sum--) {
+        for (int sum = 1; sum <= targetSum; sum++) {
             dp[arr.length][sum] = false;
         }
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = 0; sum <= targetSum; sum++) {
-                if (sum >= arr[index] && dp[index + 1][sum - arr[index]]) {
-                    dp[index][sum] = true;
-                } else {
-                    dp[index][sum] = dp[index + 1][sum];
+        for (int i = 0; i < arr.length; i++) {
+            dp[i][0] = true;
+        }
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int sum = targetSum; sum > 0; sum--) {
+                if (sum >= arr[i] && dp[i + 1][sum - arr[i]]) {
+                    dp[i][sum] = true;
                 }
+                dp[i][sum] = dp[i][sum] || dp[i + 1][sum];
+            }
+
+            // Early exit: stop as soon as targetSum becomes achievable
+            if (dp[i][targetSum]) {
+                return true;
             }
         }
 
@@ -106,22 +163,27 @@ class Solution {
 //Optimal Implementation 
 
 class Solution {
-    Boolean isSubsetSum(int arr[], int targetSum) {
-        boolean[][] dp = new boolean[arr.length+1][targetSum + 1];
+    static Boolean isSubsetSum(int arr[], int targetSum) {
+        /*
+        * dp[i][sum] represents:
+        * "Can we form the target sum = sum using elements from index i to n-1?"
+        */
+        boolean[][] dp = new boolean[arr.length + 1][targetSum + 1];
 
-        dp[arr.length][0] = true;
+        for (int i = 0; i <= arr.length; i++) {
+            dp[i][0] = true;
+        }
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = 0; sum <= targetSum; sum++) {
-                if (sum >= arr[index] && dp[index + 1][sum - arr[index]]) {
-                    dp[index][sum] = true;
-                } else {
-                    dp[index][sum] = dp[index + 1][sum];
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int sum = targetSum; sum > 0; sum--) {
+                if (sum >= arr[i] && dp[i + 1][sum - arr[i]]) {
+                    dp[i][sum] = true;
                 }
+                dp[i][sum] = dp[i][sum] || dp[i + 1][sum];
             }
 
-             // Early exit: If targetSum is achievable at this point, return true immediately.
-            if(dp[index][targetSum]){
+            // Early exit: stop as soon as targetSum becomes achievable
+            if (dp[i][targetSum]) {
                 return true;
             }
         }
@@ -131,25 +193,26 @@ class Solution {
 }
 
 
+
 //Optimal approach
 
 class Solution {
-    Boolean isSubsetSum(int arr[], int targetSum) {
-        boolean[] nextRow = new boolean[targetSum + 1];
+    static Boolean isSubsetSum(int arr[], int targetSum) {
+        // Since dp[i][*] depends on dp[i+1][*], we use two arrays to represent current and next rows
         boolean[] currentRow = new boolean[targetSum + 1];
+        boolean[] nextRow = new boolean[targetSum + 1];
 
         nextRow[0] = true;
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int sum = 0; sum <= targetSum; sum++) {
-                if (sum >= arr[index] && nextRow[sum - arr[index]]) {
+        for (int i = arr.length - 1; i >= 0; i--) {
+            currentRow[0] = true;
+            for (int sum = targetSum; sum > 0; sum--) {
+                if (sum >= arr[i] && nextRow[sum - arr[i]]) {
                     currentRow[sum] = true;
-                } else {
-                    currentRow[sum] = nextRow[sum];
                 }
+                currentRow[sum] = currentRow[sum] || nextRow[sum];
             }
 
-            // Early exit: If targetSum is achievable at this point, return true immediately.
             if (currentRow[targetSum]) {
                 return true;
             }
