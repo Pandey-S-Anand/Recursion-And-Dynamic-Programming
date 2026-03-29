@@ -1,22 +1,64 @@
 /*
-Logic : 
-
-We need to partition the given array into two subsets such that the difference between their sums equals a given value 'd'
-Let's denote the sum of the entire array as S
-Let S1 be the sum of the first subset.
-Let S2 be the sum of the second subset.
-
-According to the problem statement, we need to count the instances where the difference between the sums of these two subsets is equal to 'd' i.e S 1​ − S 2 = d
-
-We also know that the total sum of the array can be expressed as:
-S = S1 + S2
-Substituting the expression for S1 into the total sum equation, we get:​
-S= S2+ D + S2 = 2*S2 + d
-Rearranging this equation allows us to isolate S2
-S2=(S-d)/2 
-
-To solve the problem, we need to count the number of subsets with sum as (S-d)/2 
-*/
+ * Logic:
+ *
+ * We need to partition the array into two subsets: S1 and S2
+ * such that the difference of their sums equals D.
+ *
+ * Let:
+ * sum(S1) = sum1
+ * sum(S2) = sum2
+ * total sum of array = S
+ *
+ * Given:
+ *      sum1 - sum2 = D          ...(1)
+ *      sum1 + sum2 = S          ...(2)
+ *
+ * From (2):
+ *      sum2 = S - sum1
+ *
+ * Substitute in (1):
+ *      sum1 - (S - sum1) = D
+ *      2 * sum1 - S = D
+ *      2 * sum1 = S + D
+ *      sum1 = (S + D) / 2
+ *
+ * ------------------------------------------------------------
+ *
+ * Instead of explicitly forming two subsets (S1, S2),
+ * we only choose one subset S1.
+ * The remaining elements automatically form S2.
+ *
+ * For every subset S1 such that:
+ *      sum(S1) = (S + D) / 2
+ *
+ * the remaining elements form S2 with:
+ *      sum(S2) = S - sum(S1)
+ *
+ * Now verify the condition:
+ *
+ *      sum(S1) - sum(S2)
+ *    = sum1 - (S - sum1)
+ *    = 2 * sum1 - S
+ *
+ * Since:
+ *      2 * sum1 = S + D
+ *
+ * Therefore:
+ *      2 * sum1 - S = (S + D) - S = D
+ *
+ * Hence:
+ *      sum(S1) - sum(S2) = D
+ *
+ * ------------------------------------------------------------
+ *
+ * Therefore, every subset with sum = (S + D)/2
+ * corresponds to a valid partition (S1, S2)
+ * satisfying the required condition.
+ *
+ * So, counting subsets with sum = (S + D)/2
+ * gives the count of partitions where:
+ *      sum(S1) - sum(S2) = D
+ */
 
 //Bruteforce Approach
 
