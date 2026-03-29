@@ -63,59 +63,97 @@
 //Bruteforce Approach
 
 class Solution {
-    private final int MOD = 1000000007;
-
     public int countPartitions(int[] arr, int d) {
         int arrSum = Arrays.stream(arr).sum();
 
-        /*
-         * (arrSum - d) < 0:
-         * As per the problem constraint array element are non negative
-         * so the negative target sum is unachievable with non-negative array elements.
-         * 
-         * (arrSum - d) % 2 != 0:
-         * Ensures that the target sum is even. If the target sum is odd
-         * it is impossible to split the array elements into two subsets with integer sums.
-         */
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
+        // If arrSum < d, no valid partition can satisfy sum(S1) - sum(S2) = d
+        if (arrSum < d) {
             return 0;
         }
 
-        return countSubsetsWithTargetSum(arr, 0, (arrSum - d) / 2);
+        /*
+        * If (arrSum + d) is odd,
+        * it is not possible to divide the array into two subsets with integer sums.
+        */
+        if ((arrSum + d) % 2 != 0) {
+            return 0;
+        }
+
+        return countSubsetsWithTargetSum(arr, 0, (arrSum + d) / 2);
     }
 
-     private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+    /*
+    * This recursive call represents:
+    * "Number of subsets we can form using elements from index → end
+    * such that their sum equals target."
+    */
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+        /*
+         * Base Case:
+         * If we have reached the end of the array,
+         * check whether the remaining target is 0.
+         *
+         * If target == 0 → one valid subset found → return 1
+         * Else → no valid subset → return 0
+         */
         if (index == arr.length) {
             return targetSum == 0 ? 1 : 0;
         }
 
-        int include = 0;
+        /*
+         * Since all elements and target are non-negative,
+         * once target becomes negative, it cannot become 0 again.
+         * Hence, we only consider the "take" option when
+         * arr[index] <= target.
+         */
+        int count = 0;
+
+        // Option 1: Take the current element
         if (targetSum >= arr[index]) {
-            include = countSubsetsWithTargetSum(arr, index + 1, targetSum - arr[index]);
+            count += countSubsetsWithTargetSum(arr, index + 1, targetSum - arr[index]);
         }
 
-        int exclude = countSubsetsWithTargetSum(arr, index + 1, targetSum);
+        // Option 2: Do not take the current element
+        count += countSubsetsWithTargetSum(arr, index + 1, targetSum);
 
-        return (include + exclude);
+        return count;
     }
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[index][targetSum] stores the number of subsets
+    * that can be formed using elements from index → end
+    * such that their sum equals targetSum.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → number of valid subsets for this state
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation in future calls.
+    */
+    private Integer[][] dp;
 
     public int countPartitions(int[] arr, int d) {
         int arrSum = Arrays.stream(arr).sum();
 
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
+        if (arrSum < d) {
             return 0;
         }
 
-        int targetSum = (arrSum - d) / 2;
-        cache = new int[arr.length][targetSum + 1];
-        intializeCache();
+        if ((arrSum + d) % 2 != 0) {
+            return 0;
+        }
+
+        int targetSum = (arrSum + d) / 2;
+
+        dp = new Integer[arr.length][targetSum + 1];
 
         return countSubsetsWithTargetSum(arr, 0, targetSum);
     }
@@ -125,56 +163,145 @@ class Solution {
             return targetSum == 0 ? 1 : 0;
         }
 
-        if (cache[index][targetSum] != -1) {
-            return cache[index][targetSum];
+        if (dp[index][targetSum] != null) {
+            return dp[index][targetSum];
         }
 
-        int include = 0;
+        int count = 0;
+
         if (targetSum >= arr[index]) {
-            include = countSubsetsWithTargetSum(arr, index + 1, targetSum - arr[index]);
+            count += countSubsetsWithTargetSum(arr, index + 1, targetSum - arr[index]);
         }
 
-        int exclude = countSubsetsWithTargetSum(arr, index + 1, targetSum);
+        count += countSubsetsWithTargetSum(arr, index + 1, targetSum);
 
-        return cache[index][targetSum] = (include + exclude);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[index][targetSum] = count;
     }
 }
 
 
-//Optimal Approach
+//Better Approach
+
+//Naive Implementation
 
 class Solution {
     public int countPartitions(int[] arr, int d) {
         int arrSum = Arrays.stream(arr).sum();
 
-        if ((arrSum - d) < 0 || (arrSum - d) % 2 != 0) {
+        if (arrSum < d) {
             return 0;
         }
 
-        int targetSum = (arrSum - d) / 2;
-        return countSubsetsWithTargetSum(arr, targetSum);
+        if ((arrSum + d) % 2 != 0) {
+            return 0;
+        }
+
+        return countSubsetsWithTargetSum(arr, 0, (arrSum + d) / 2);
     }
 
-    private int countSubsetsWithTargetSum(int arr[], int targetSum) {
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+        /*
+        * dp[i][sum] represents:
+        * "Number of subsets that can be formed using elements from index i to n-1
+        * such that their sum equals sum."
+        */
+        int[][] dp = new int[arr.length + 1][targetSum + 1];
+
+        dp[arr.length][0] = 1;
+
+        for (int sum = 1; sum <= targetSum; sum++) {
+            dp[arr.length][sum] = 0;
+        }
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int sum = 0; sum <= targetSum; sum++) {
+                if (sum >= arr[i]) {
+                    dp[i][sum] = dp[i + 1][sum - arr[i]];
+                }
+
+                dp[i][sum] += dp[i + 1][sum];
+            }
+        }
+
+        return dp[0][targetSum];
+    }
+}
+
+
+//Optimal Implementation 
+
+class Solution {
+    public int countPartitions(int[] arr, int d) {
+        int arrSum = Arrays.stream(arr).sum();
+
+        if (arrSum < d) {
+            return 0;
+        }
+
+        if ((arrSum + d) % 2 != 0) {
+            return 0;
+        }
+
+        return countSubsetsWithTargetSum(arr, 0, (arrSum + d) / 2);
+    }
+
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+        /*
+        * dp[i][sum] represents:
+        * "Number of subsets that can be formed using elements from index i to n-1
+        * such that their sum equals sum."
+        */
+        int[][] dp = new int[arr.length + 1][targetSum + 1];
+
+        dp[arr.length][0] = 1;
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int sum = 0; sum <= targetSum; sum++) {
+                if (sum >= arr[i]) {
+                    dp[i][sum] = dp[i + 1][sum - arr[i]];
+                }
+
+                dp[i][sum] += dp[i + 1][sum];
+            }
+        }
+
+        return dp[0][targetSum];
+    }
+}
+
+
+//Optimal approach
+
+class Solution {
+    public int countPartitions(int[] arr, int d) {
+        int arrSum = Arrays.stream(arr).sum();
+
+        if (arrSum < d) {
+            return 0;
+        }
+
+        if ((arrSum + d) % 2 != 0) {
+            return 0;
+        }
+
+        return countSubsetsWithTargetSum(arr, 0, (arrSum + d) / 2);
+    }
+
+    private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
+        // Since dp[i][*] depends on dp[i+1][*], we use two arrays (currentRow and nextRow) to represent current and next states
         int[] nextRow = new int[targetSum + 1];
         int[] currentRow = new int[targetSum + 1];
 
         nextRow[0] = 1;
 
-        for (int index = arr.length - 1; index >= 0; index--) {
+        for (int i = arr.length - 1; i >= 0; i--) {
             for (int sum = 0; sum <= targetSum; sum++) {
-                int include = 0;
-                if (sum >= arr[index]) {
-                    include = nextRow[sum - arr[index]] % MOD;
+                int count = 0;
+                if (sum >= arr[i]) {
+                    count = nextRow[sum - arr[i]];
                 }
-                int exclude = nextRow[sum] % MOD;
-                currentRow[sum] = (include + exclude) % MOD;
+                count += nextRow[sum];
+                currentRow[sum] = count;
             }
 
             int[] temp = currentRow;
