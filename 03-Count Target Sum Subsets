@@ -152,6 +152,7 @@ class Solution {
 
 class Solution {
     public int perfectSum(int arr[], int targetSum) {
+        // Since dp[i][*] depends on dp[i+1][*], we use two arrays (currentRow and nextRow) to represent current and next states
         int[] nextRow = new int[targetSum + 1];
         int[] currentRow = new int[targetSum + 1];
 
