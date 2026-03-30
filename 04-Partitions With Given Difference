@@ -126,9 +126,9 @@ class Solution {
 class Solution {
     /*
     * Memoization:
-    * dp[index][targetSum] stores the number of subsets
+    * dp[index][sum] stores the number of subsets
     * that can be formed using elements from index → end
-    * such that their sum equals targetSum.
+    * such that their sum equals 'sum'.
     *
     * Meaning of values:
     * - null → this state has NOT been computed yet
