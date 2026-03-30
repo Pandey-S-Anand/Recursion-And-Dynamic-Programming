@@ -180,7 +180,7 @@ class Solution {
 }
 
 
-//Better Approach
+//Optimal Approach
 
 //Naive Implementation
 
@@ -228,7 +228,7 @@ class Solution {
 }
 
 
-//Optimal Implementation 
+//Better Implementation 
 
 class Solution {
     public int countPartitions(int[] arr, int d) {
@@ -246,11 +246,6 @@ class Solution {
     }
 
     private int countSubsetsWithTargetSum(int[] arr, int index, int targetSum) {
-        /*
-        * dp[i][sum] represents:
-        * "Number of subsets that can be formed using elements from index i to n-1
-        * such that their sum equals sum."
-        */
         int[][] dp = new int[arr.length + 1][targetSum + 1];
 
         dp[arr.length][0] = 1;
@@ -270,7 +265,7 @@ class Solution {
 }
 
 
-//Optimal approach
+//Optimal implementation
 
 class Solution {
     public int countPartitions(int[] arr, int d) {
