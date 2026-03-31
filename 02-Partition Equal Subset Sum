@@ -1,17 +1,32 @@
-/*
-Logic :
-
-Let the sum of all elements in the array be S. We want to partition the array into two subsets S1 and S2 such that their sums are equal. 
-Thus, S = S1 + S2, and since S1 = S2, we get:
-
-S = 2 × S1
-or
-S1 = S / 2
-
-Condition for Feasibility:
-- If S is odd, it's impossible to split the array into two equal subsets.
-- If S is even, check if there exists a subset with sum S / 2. This reduces to a subset sum problem.
-*/
+/**
+ * Logic:
+ *
+ * Let the total sum of all elements in the array be S.
+ * We want to partition the array into two subsets S1 and S2
+ * such that their sums are equal.
+ *
+ * So:
+ *      sum(S1) = sum(S2)
+ *
+ * Also, we know:
+ *      sum(S1) + sum(S2) = S
+ *
+ * Substituting:
+ *      sum(S1) + sum(S1) = S
+ *      2 * sum(S1) = S
+ *      sum(S1) = S / 2
+ *
+ * Since sum(S1) = S / 2, the remaining elements automatically
+ * form the second subset S2, whose sum will also be S / 2.
+ *
+ * ------------------------------------------------------------
+ *
+ * Condition for Feasibility:
+ * - If S is odd → it is impossible to divide it into two equal integer sums.
+ * - If S is even → check if there exists a subset with sum S / 2.
+ *
+ * This reduces the problem to a subset sum problem.
+ */
 
 //Bruteforce Approach
 
