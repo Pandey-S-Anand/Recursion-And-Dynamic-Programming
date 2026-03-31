@@ -125,7 +125,7 @@ class Solution {
 }
 
 
-//Optimal Implementation 
+//Better implementation 
 
 class Solution {
     public int perfectSum(int[] arr, int targetSum) {
@@ -148,7 +148,7 @@ class Solution {
 }
 
 
-//Optimal approach 
+//Optimal implementation 
 
 class Solution {
     public int perfectSum(int arr[], int targetSum) {
