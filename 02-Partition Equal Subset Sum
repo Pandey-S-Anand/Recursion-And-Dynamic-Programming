@@ -97,7 +97,7 @@ class Solution {
 
 
 
-//Improved approach
+//Better approach
 
 class Solution {
     /*
@@ -152,7 +152,7 @@ class Solution {
 
 
 
-//Better approach
+//Optimal approach
 
 //Naive Implementation
 
@@ -203,7 +203,7 @@ class Solution {
 }
 
 
-//Optimal implementation
+//Better implementation
 
 class Solution {
     public boolean canPartition(int[] arr) {
@@ -261,7 +261,7 @@ class Solution {
 
 
 
-//Optimal approach
+//Optimal implementation
 
 class Solution {
     public boolean canPartition(int[] arr) {
