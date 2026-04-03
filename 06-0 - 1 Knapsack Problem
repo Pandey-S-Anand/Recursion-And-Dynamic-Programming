@@ -81,9 +81,11 @@ public class Solution {
             // If we can include the current item, add its value
             take = value[index] + knapsack(weight, value, index + 1, n, capacity - weight[index]);
         }
-        // Return the maximum of including or excluding the current item
+
+        // Exclude the current item
         int notTake = knapsack(weight, value, index + 1, n, capacity);
 
+        // Return the maximum of including or excluding the current item
         return Math.max(take, notTake);
     }
 }
