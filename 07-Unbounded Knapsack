@@ -220,6 +220,7 @@ class Solution {
 
 class Solution {
     public int knapSack(int value[], int weight[], int maxCapacity) {
+        // Since dp[i][*] depends on dp[i+1][*], we use two arrays (currentRow and nextRow) to represent current and next states
         int[] currentRow = new int[maxCapacity + 1];
         int[] nextRow = new int[maxCapacity + 1];
 
