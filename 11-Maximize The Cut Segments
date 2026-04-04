@@ -1,0 +1,168 @@
+//Bruteforce approach
+
+class Solution {
+    public int maximizeCuts(int n, int x, int y, int z) {
+        /*
+         * We start the recursion with full length 'n'.
+         * If no valid cuts are possible, helper will return Integer.MIN_VALUE.
+         * In that case, we convert it to 0 (as per problem requirement).
+         */
+        int maxCuts = maximizeCutsHelper(n, x, y, z);
+
+        return maxCuts == Integer.MIN_VALUE ? 0 : maxCuts;
+    }
+
+    private int maximizeCutsHelper(int n, int x, int y, int z) {
+        /*
+         * Base Case 1:
+         * If remaining length becomes 0,
+         * it means we have successfully divided the rod.
+         * No more cuts needed → return 0.
+         */
+        if (n == 0) {
+            return 0;
+        }
+
+        /*
+         * Base Case 2:
+         * If length becomes negative,
+         * it means we have made an invalid cut.
+         * Return Integer.MIN_VALUE to mark this path as invalid.
+         */
+        if (n < 0) {
+            return Integer.MIN_VALUE;
+        }
+
+        /*
+         * Try all three possible cuts:
+         * - Cut of length x
+         * - Cut of length y
+         * - Cut of length z
+         *
+         * Since cuts can be reused, this is an unbounded choice.
+         */
+        int includeX = maximizeCutsHelper(n - x, x, y, z);
+        int includeY = maximizeCutsHelper(n - y, x, y, z);
+        int includeZ = maximizeCutsHelper(n - z, x, y, z);
+
+        // Take the best (maximum) among all choices.
+        int max = Math.max(includeX, Math.max(includeY, includeZ));
+
+        /*
+         * If all choices lead to invalid states,
+         * propagate Integer.MIN_VALUE upward.
+         */
+        if (max == Integer.MIN_VALUE) {
+            return max;
+        }
+
+        /*
+         * Otherwise, add 1 to count the current cut
+         * and return the result.
+         */
+        return max + 1;
+    }
+}
+
+
+//Better approach
+
+class Solution {
+    /*
+    * Memoization:
+    * dp[n] stores the maximum number of cuts that can be made
+    * for a rod of length = n.
+    *
+    * Meaning of values:
+    * - null  → this state has NOT been computed yet
+    * - value → maximum number of cuts for this length
+    * - Integer.MIN_VALUE → not possible to cut the rod into valid segments
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
+    */
+
+    private Integer[] dp;
+
+    public int maximizeCuts(int n, int x, int y, int z) {
+        dp = new Integer[n + 1];
+        int maxCuts = maximizeCutsHelper(n, x, y, z);
+
+        return maxCuts == Integer.MIN_VALUE ? 0 : maxCuts;
+    }
+
+    private int maximizeCutsHelper(int n, int x, int y, int z) {
+        if (n == 0) {
+            return 0;
+        }
+
+        if (dp[n] != null) {
+            return dp[n];
+        }
+
+        int includeX = Integer.MIN_VALUE;
+        if (x <= n) {
+            includeX = maximizeCutsHelper(n - x, x, y, z);
+        }
+
+        int includeY = Integer.MIN_VALUE;
+        if (y <= n) {
+            includeY = maximizeCutsHelper(n - y, x, y, z);
+        }
+
+        int includeZ = Integer.MIN_VALUE;
+        if (z <= n) {
+            includeZ = maximizeCutsHelper(n - z, x, y, z);
+        }
+
+        int maxCuts = Math.max(includeX, Math.max(includeY, includeZ));
+
+        if (maxCuts == Integer.MIN_VALUE) {
+            return dp[n] = maxCuts;
+        }
+
+        return dp[n] = maxCuts + 1;
+    }
+}
+
+
+//Optimal approach
+
+class Solution {
+    public int maximizeCuts(int n, int x, int y, int z) {
+        /*
+        * dp[rodLength] represents:
+        * "Maximum number of cuts that can be made for a rod of length = rodLength."
+        *
+        * If dp[rodLength] = Integer.MIN_VALUE,
+        * it means it is not possible to cut the rod into valid segments of lengths x, y, or z.
+        */
+        int[] dp = new int[n + 1];
+
+        dp[0] = 0;
+
+        for (int rodLength = 1; rodLength <= n; rodLength++) {
+            int includeX = Integer.MIN_VALUE;
+            if (x <= rodLength) {
+                includeX = dp[rodLength - x];
+            }
+
+            int includeY = Integer.MIN_VALUE;
+            if (y <= rodLength) {
+                includeY = dp[rodLength - y];
+            }
+
+            int includeZ = Integer.MIN_VALUE;
+            if (z <= rodLength) {
+                includeZ = dp[rodLength - z];
+            }
+
+            int maxCuts = Math.max(includeX, Math.max(includeY, includeZ));
+
+            dp[rodLength] = maxCuts == Integer.MIN_VALUE ? maxCuts : maxCuts + 1;
+        }
+
+        return dp[n] == Integer.MIN_VALUE ? 0 : dp[n];
+    }
+}
