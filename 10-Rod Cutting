@@ -1,185 +1,224 @@
 //Bruteforce Approach
 
 class Solution {
-    public int cutRod(int price[]) {
-        return cutRod(price, 1, price.length);
+    public int cutRod(int[] price) {
+        return cutRod(1, price.length, price);
     }
 
-    private int cutRod(int[] price, int pieceLength, int rodLength) {
-        // Base case: If the rod length is zero, no revenue can be generated.
+    private int cutRod(int pieceLength, int rodLength, int[] price) {
+        /*
+        * Base Case 1:
+        * If the remaining rod length becomes 0,
+        * no further cuts can be made → return 0 revenue.
+        */
+
         if (rodLength == 0) {
             return 0;
         }
 
         /*
-         * Base case: If we've exhausted all possible piece lengths but still have some
-         * length of rod remaining, return a negative value (Integer.MIN_VALUE) to
-         * indicate that no valid cut can be made to use up the remaining rod length.
-         */
-        if (pieceLength > price.length) {
+        * Base Case 2:
+        * If all possible piece lengths are exhausted but rod is still remaining,
+        * it means we cannot form a valid cut combination.
+        * Return Integer.MIN_VALUE to indicate an invalid state.
+        */
+        if (pieceLength == price.length + 1) {
             return Integer.MIN_VALUE;
         }
 
-        // Option 1: Exclude the current piece length and move to the next piece length
-        int exclude = cutRod(price, pieceLength + 1, rodLength);
         int include = Integer.MIN_VALUE;
 
-        if (rodLength >= pieceLength) {
-            /*
-             * Option 2: Include the current piece length if it fits into the remaining rod
-             * length. Recursively attempt to cut the rod again using the same piece length
-             * to maximize the total value.
-             */
-            include = cutRod(price, pieceLength, rodLength - pieceLength);
+        /*
+        * Option 1: Include the current piece length
+        * We can include it only if it fits in the remaining rod.
+        * Since this is an unbounded problem, we stay at the same pieceLength
+        * to allow multiple cuts of the same size.
+        */
+        if (pieceLength <= rodLength) {
+            include = cutRod(pieceLength, rodLength - pieceLength, price);
+
             if (include != Integer.MIN_VALUE) {
                 include += price[pieceLength - 1]; // If it's possible to include the current piece, add its value to the total
             }
         }
-        // Return the maximum value between including and excluding the current piece length
+
+        /*
+        * Option 2: Exclude the current piece length
+        * Move to the next possible piece length.
+        */
+        int exclude = cutRod(pieceLength + 1, rodLength, price);
+
         return Math.max(include, exclude);
-    }
-}
-
-
-//Improved Approach
-
-class Solution {
-    // cache[pieceLength][rodLength] stores the maximum total revenue you can generate by cutting a rod of length rodLength using only pieces of length pieceLength or greater.
-    private int[][] cache;
-    
-    public int cutRod(int price[]) {
-        cache = new int[price.length + 1][price.length + 1];
-        intializeCache();
-        return cutRod(price, 1, price.length);
-    }
-
-    private int cutRod(int[] price, int pieceLength, int rodLength) {
-        if (rodLength == 0) {
-            return 0;
-        }
-
-        if (pieceLength > price.length) {
-            return Integer.MIN_VALUE;
-        }
-        
-        if (cache[pieceLength][rodLength] != -1) {
-            return cache[pieceLength][rodLength];
-        }
-
-        int exclude = cutRod(price, pieceLength + 1, rodLength);
-        int include = Integer.MIN_VALUE;
-
-        if (rodLength >= pieceLength) {
-            include = cutRod(price, pieceLength, rodLength - pieceLength);
-            if (include != Integer.MIN_VALUE) {
-                include += price[pieceLength - 1];
-            }
-        }
-
-        return cache[pieceLength][rodLength] = Math.max(include, exclude);
-    }
-    
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
     }
 }
 
 
 //Better Approach
 
-//Naive Implementation 
+class Solution {
+    /*
+    * Memoization:
+    * dp[pieceLength][rodLength] stores the maximum revenue that can be obtained
+    * using piece lengths from pieceLength → n with remaining rod length = rodLength.
+    *
+    * Meaning of values:
+    * - null  → this state has NOT been computed yet
+    * - value → maximum achievable revenue for this state
+    * - Integer.MIN_VALUE → invalid state (cannot form exact rod length)
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
+
+    public int cutRod(int[] price) {
+        dp = new Integer[price.length + 1][price.length + 1];
+        return cutRod(1, price.length, price);
+    }
+
+    private int cutRod(int pieceLength, int rodLength, int[] price) {
+        if (rodLength == 0) {
+            return 0;
+        }
+
+        if (pieceLength == price.length + 1) {
+            return Integer.MIN_VALUE;
+        }
+
+        if (dp[pieceLength][rodLength] != null) {
+            return dp[pieceLength][rodLength];
+        }
+
+        int include = Integer.MIN_VALUE;
+
+        if (pieceLength <= rodLength) {
+            include = cutRod(pieceLength, rodLength - pieceLength, price);
+
+            if (include != Integer.MIN_VALUE) {
+                include += price[pieceLength - 1];
+            }
+        }
+
+        int exclude = cutRod(pieceLength + 1, rodLength, price);
+
+        return dp[pieceLength][rodLength] = Math.max(include, exclude);
+    }
+}
+
+
+//Optimal Approach
+
+//Naive implementation 
 
 class Solution {
-    public int cutRod(int price[]) {
-         // dp[pieceLength][rodLength] stores the maximum total revenue you can generate by cutting a rod of length rodLength using only pieces of length pieceLength or greater.
-        int[][] dp = new int[price.length + 2][price.length + 1];
-        
-        for (int pieceLength = 0; pieceLength <= price.length; pieceLength++) {
+    public int cutRod(int[] price) {
+        int rodLength = price.length;
+
+        /*
+        * dp[pieceLength][rodSize] represents:
+        * "Maximum revenue that can be obtained by cutting a rod of length = rodSize
+        * using piece lengths from pieceLength → n."
+        *
+        * If it is not possible to form the exact rod length, the value is Integer.MIN_VALUE.
+        */
+        int[][] dp = new int[rodLength + 2][rodLength + 1];
+
+        for (int pieceLength = 1; pieceLength <= rodLength; pieceLength++) {
             dp[pieceLength][0] = 0;
         }
-        
-        for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-            dp[price.length][rodLength] = Integer.MIN_VALUE;
+
+        for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
+            dp[rodLength + 1][rodSize] = Integer.MIN_VALUE;
         }
-        
-        for (int peiceLength = price.length; peiceLength >= 1; peiceLength--) {
-            for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-                int exclude = dp[peiceLength + 1][rodLength];
+
+        for (int pieceLength = rodLength; pieceLength >= 1; pieceLength--) {
+            for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
                 int include = Integer.MIN_VALUE;
 
-                if (rodLength >= peiceLength) {
-                    include = dp[peiceLength][rodLength - peiceLength];
+                if (pieceLength <= rodSize) {
+                    include = dp[pieceLength][rodSize - pieceLength];
+
                     if (include != Integer.MIN_VALUE) {
-                        include += price[peiceLength - 1];
+                        include += price[pieceLength - 1];
                     }
                 }
 
-                dp[peiceLength][rodLength] = Math.max(include, exclude);
+                int exclude = dp[pieceLength + 1][rodSize];
+
+                dp[pieceLength][rodSize] = Math.max(include, exclude);
             }
         }
-        
-        return dp[1][price.length];
+
+        return dp[1][rodLength];
     }
 }
 
 
-//Optimal Implementation
+//Better implementation
 
 class Solution {
-    public int cutRod(int price[]) {
-        int[][] dp = new int[price.length + 2][price.length + 1];
+    public int cutRod(int[] price) {
+        int rodLength = price.length;
 
-        for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-            dp[price.length][rodLength] = Integer.MIN_VALUE;
+        int[][] dp = new int[rodLength + 2][rodLength + 1];
+
+        for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
+            dp[rodLength + 1][rodSize] = Integer.MIN_VALUE;
         }
-        
-        for (int peiceLength = price.length; peiceLength >= 1; peiceLength--) {
-            for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-                int exclude = dp[peiceLength + 1][rodLength];
+
+        for (int pieceLength = rodLength; pieceLength >= 1; pieceLength--) {
+            for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
                 int include = Integer.MIN_VALUE;
 
-                if (rodLength >= peiceLength) {
-                    include = dp[peiceLength][rodLength - peiceLength];
+                if (pieceLength <= rodSize) {
+                    include = dp[pieceLength][rodSize - pieceLength];
+
                     if (include != Integer.MIN_VALUE) {
-                        include += price[peiceLength - 1];
+                        include += price[pieceLength - 1];
                     }
                 }
 
-                dp[peiceLength][rodLength] = Math.max(include, exclude);
+                int exclude = dp[pieceLength + 1][rodSize];
+
+                dp[pieceLength][rodSize] = Math.max(include, exclude);
             }
         }
-        
-        return dp[1][price.length];
+
+        return dp[1][rodLength];
     }
 }
 
 
-//Optimal approach
+//Optimal implementation
 
 class Solution {
-    public int cutRod(int price[]) {
-        int[] currentRow = new int[price.length + 1];
-        int[] nextRow = new int[price.length + 1];
+    public int cutRod(int[] price) {
+        int rodLength = price.length;
+        // Since dp[pieceLength][*] depends on dp[pieceLength][*]  and dp[pieceLength+1][*], we use two arrays (currentRow and nextRow)
+        int[] currentRow = new int[rodLength + 1];
+        int[] nextRow = new int[rodLength + 1];
 
-        for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-            nextRow[rodLength] = Integer.MIN_VALUE;
+        for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
+            nextRow[rodSize] = Integer.MIN_VALUE;
         }
 
-        for (int peiceLength = price.length; peiceLength >= 1; peiceLength--) {
-            for (int rodLength = 1; rodLength <= price.length; rodLength++) {
-                int exclude = nextRow[rodLength];
+        for (int pieceLength = rodLength; pieceLength >= 1; pieceLength--) {
+            currentRow[0] = 0;
+            for (int rodSize = 1; rodSize <= rodLength; rodSize++) {
                 int include = Integer.MIN_VALUE;
 
-                if (rodLength >= peiceLength) {
-                    include = currentRow[rodLength - peiceLength];
+                if (pieceLength <= rodSize) {
+                    include = currentRow[rodSize - pieceLength];
+
                     if (include != Integer.MIN_VALUE) {
-                        include += price[peiceLength - 1];
+                        include += price[pieceLength - 1];
                     }
                 }
 
-                currentRow[rodLength] = Math.max(include, exclude);
+                int exclude = nextRow[rodSize];
+
+                currentRow[rodSize] = Math.max(include, exclude);
             }
 
             int[] temp = currentRow;
@@ -187,6 +226,6 @@ class Solution {
             nextRow = temp;
         }
 
-        return nextRow[price.length];
+        return nextRow[rodLength];
     }
 }
