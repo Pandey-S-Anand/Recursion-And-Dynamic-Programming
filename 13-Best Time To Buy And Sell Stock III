@@ -58,24 +58,12 @@ class Solution {
     * from day 'day' to the end of the price list, given:
     * 
     * - holdStock:
-    *     0 → You do NOT currently hold any stock.
-    *     1 → You ARE currently holding a stock.
+    *     0 → You do NOT currently hold any stock. (can buy or skip)
+    *     1 → You ARE currently holding a stock. (can sell or skip)
     *
     * - transactionsRemaining:
     *     Number of transactions STILL allowed (maximum of 2 transactions allowed).
     *     Each transaction is defined as one buy followed by one sell.
-    *
-    * Decision-making:
-    * 
-    * If holdStock == 0:
-    *   → You can either:
-    *     1. Buy the stock: Subtract the current price and move to the next day with holdStock = 1.
-    *     2. Skip buying: Move to the next day with holdStock = 0.
-    * 
-    * If holdStock == 1:
-    *   → You can either:
-    *     1. Sell the stock: Add the current price, decrement 'transactionsRemaining' by 1, and move to next day with holdStock = 0.
-    *     2. Skip selling: Move to the next day with holdStock = 1.
     */
     private Integer[][][] dp;
 
