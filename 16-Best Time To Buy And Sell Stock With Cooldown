@@ -2,102 +2,51 @@
 
 class Solution {
     public int maxProfit(int[] prices) {
-        // Starting with day 1 and not holding any stock initially.
-        return calculateMaxProfit(1, prices, false);
-    }
-
-    private int calculateMaxProfit(int day, int[] prices, boolean holdStock) {
-        // If the current day exceeds the total number of days, no more transactions can be made, so profit is 0.
-        if (day > prices.length) {
-            return 0;
-        }
-
-        // CASE 1: We do NOT currently hold any stock. We have two options — buy the stock or skip.
-        if (!holdStock) {
-
-            /**
-             * CHOICE 1: Buy the stock today.
-             *   - Subtract today's price from profit (since it's a cost).
-             *   - Move to the next day with stock in hand.
-             */
-            int buyStock = -prices[day - 1] + calculateMaxProfit(day + 1, prices, true);
-
-            /**
-             * CHOICE 2: Skip buying today.
-             *   - Move to the next day without buying.
-             */
-            int skipBuy = calculateMaxProfit(day + 1, prices, false);
-
-            /**
-             * Return the better of the two options: buying or skipping.
-             */
-            return Math.max(buyStock, skipBuy);
-        }
-
-        // CASE 2: We ARE currently holding a stock.  We have two options — sell it or skip.
-
-        /**
-         * CHOICE 1: Sell the stock today.
-         *   - Add today's price to profit (gain).
-         *   - Apply cooldown by skipping the next day (move to day + 2).
-         *   - After selling, we no longer hold stock.
+        /*
+         * Start recursion from day = 0.
+         * Initially, we are not holding any stock (holdStock = false).
          */
-        int sellStock = prices[day - 1] + calculateMaxProfit(day + 2, prices, false);
-
-        // CHOICE 2: Skip selling today. - Hold the stock and move to the next day.
-        int skipSell = calculateMaxProfit(day + 1, prices, true);
-
-        // Return the better of the two options: selling or holding.
-        return Math.max(sellStock, skipSell);
-    }
-}
-
-
-//Improved Approach
-
-class Solution {
-    /**
-    * cache[day][holdStock] represents the maximum profit that can be earned
-    * starting from day 'day' and onward, given the current holding state:
-    *
-    * - cache[day][0] → Max profit starting from day when NOT holding a stock
-    * - cache[day][1] → Max profit starting from day when HOLDING a stock
-    */
-    private int[][] cache;
-
-    public int maxProfit(int[] prices) {
-        cache = new int[prices.length + 1][2];
-        intializeCache();
-        return calculateMaxProfit(1, prices, 0);
+        return maxProfit(0, false, prices);
     }
 
-    private int calculateMaxProfit(int day, int[] prices, int holdStock) {
-        if (day > prices.length) {
+    private int maxProfit(int day, boolean holdStock, int[] prices) {
+        // If all days are processed, no further profit can be made
+        if (day >= prices.length) {
             return 0;
         }
 
-        if (cache[day][holdStock] != -1) {
-            return cache[day][holdStock];
+        // If we do NOT currently hold a stock
+        if (!holdStock) {
+            /*
+             * Two choices:
+             * 1. Buy the stock today:
+             *    - Profit decreases by prices[day] (cost of buying).
+             *    - No fee is applied here.
+             *
+             * 2. Skip buying today:
+             *    - Move to next day with same state.
+             */
+            int buy = -prices[day] + maxProfit(day + 1, true, prices);
+            int skipBuy = maxProfit(day + 1, false, prices);
+            return Math.max(buy, skipBuy);
         }
 
-        if (holdStock == 0) {
-            int buyStock = -prices[day - 1] + calculateMaxProfit(day + 1, prices, 1);
-            int skipBuy = calculateMaxProfit(day + 1, prices, 0);
+        /*
+        * If we currently HOLD a stock:
+        * Two choices:
+        * 1. Sell the stock today:
+        *    - Profit increases by prices[day].
+        *    - After selling, we must observe a cooldown of 1 day,
+        *      meaning we cannot buy on the next day.
+        *    - Hence, we move to day + 2 with holdStock = false.
+        *
+        * 2. Skip selling today:
+        *    - Move to next day with same state.
+        */
+        int sell = prices[day] + maxProfit(day + 2, false, prices);
+        int skipSell = maxProfit(day + 1, true, prices);
 
-            return cache[day][holdStock] = Math.max(buyStock, skipBuy);
-        }
-
-        int sellStock = prices[day - 1] + calculateMaxProfit(day + 2, prices, 0);
-
-        int skipSell = calculateMaxProfit(day + 1, prices, 1);
-
-        return cache[day][holdStock] = Math.max(sellStock, skipSell);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return Math.max(sell, skipSell);
     }
 }
 
@@ -105,74 +54,152 @@ class Solution {
 //Better Approach
 
 class Solution {
+    /*
+    * Memoization:
+    * dp[day][holdStock] stores the maximum profit that can be achieved
+    * starting from the given day with the current holding state,
+    * considering the cooldown constraint after selling.
+    *
+    * Meaning of values:
+    * - null  → this state has NOT been computed yet
+    * - value → maximum profit achievable for this state
+    *
+    * State definition:
+    * - holdStock = 0 → we do NOT hold a stock (can buy or skip)
+    * - holdStock = 1 → we currently hold a stock (can sell or skip)
+    *
+    * Cooldown rule:
+    * - After selling a stock, we must skip the next day (cooldown of 1 day),
+    *   so we move to day + 2 after a sell operation.
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
+
     public int maxProfit(int[] prices) {
-        /**
-        * dp[day][holdStock] represents the maximum profit that can be earned
-        * starting from day 'day' and onward, given the current holding state:
-        *
-        * - dp[day][0] → Max profit starting from day when NOT holding a stock
-        * - dp[day][1] → Max profit starting from day when HOLDING a stock
-        */
-        int[][] dp = new int[prices.length + 3][2];
+        dp = new Integer[prices.length][2];
+        return maxProfit(0, 0, prices);
+    }
 
-        dp[prices.length + 1][0] = dp[prices.length + 1][1] = dp[prices.length + 2][0] = dp[prices.length + 2][1] = 0;
-
-        for (int day = prices.length; day >= 1; day--) {
-            for (int holdStock = 0; holdStock <= 1; holdStock++) {
-                int profit = 0;
-                if (holdStock == 0) {
-                    int buyStock = -prices[day - 1] + dp[day + 1][1];
-                    int skipBuy = dp[day + 1][0];
-
-                    profit = Math.max(buyStock, skipBuy);
-                } else {
-                    int sellStock = prices[day - 1] + dp[day + 2][0];
-                    int skipSell = dp[day + 1][1];
-
-                    profit = Math.max(sellStock, skipSell);
-                }
-                dp[day][holdStock] = profit;
-            }
+    private int maxProfit(int day, int holdStock, int[] prices) {
+        if (day >= prices.length) {
+            return 0;
         }
 
-        return dp[1][0];
+        if (dp[day][holdStock] != null) {
+            return dp[day][holdStock];
+        }
+
+        if (holdStock == 0) {
+            int buy = -prices[day] + maxProfit(day + 1, 1, prices);
+            int skipBuy = maxProfit(day + 1, 0, prices);
+            return dp[day][holdStock] = Math.max(buy, skipBuy);
+        }
+
+        int sell = prices[day] + maxProfit(day + 2, 0, prices);
+        int skipSell = maxProfit(day + 1, 1, prices);
+
+        return dp[day][holdStock] = Math.max(sell, skipSell);
     }
 }
 
 
-//Optimal approach
+//Optimal Approach
+
+//Naive implementation
+
+class Solution {
+    /*
+    * dp[day][holdStock] represents:
+    * "Maximum profit that can be achieved from day 'day' to the end,
+    * given the current holding state, considering the cooldown constraint."
+    *
+    * State meaning:
+    * - holdStock = 0 → we do NOT hold a stock (can buy or skip)
+    * - holdStock = 1 → we currently hold a stock (can sell or skip)
+    *
+    * Cooldown rule:
+    * - After selling a stock, we must skip the next day,
+    *   so we move to day + 2 after a sell operation.
+    */
+    public int maxProfit(int[] prices) {
+        int[][] dp = new int[prices.length + 2][2];
+
+        dp[prices.length][0] = dp[prices.length][1] = 0;
+        dp[prices.length + 1][0] = dp[prices.length + 1][1] = 0;
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            for (int holdStock = 0; holdStock <= 1; holdStock++) {
+                int profit = 0;
+
+                if (holdStock == 0) {
+                    int buy = -prices[day] + dp[day + 1][1];
+                    int skipBuy = dp[day + 1][0];
+                    profit = Math.max(buy, skipBuy);
+                } else {
+                    int sell = prices[day] + dp[day + 2][0];
+                    int skipSell = dp[day + 1][1];
+                    profit = Math.max(sell, skipSell);
+                }
+
+                dp[day][holdStock] = profit;
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+
+//Better implementation
 
 class Solution {
     public int maxProfit(int[] prices) {
-        int[] currentDay = new int[2];
-        int[] nextDay = new int[2];
-        int[] dayAfterNext = new int[2];
+        int[][] dp = new int[prices.length + 2][2];
 
-        nextDay[0] = nextDay[1] = dayAfterNext[0] = dayAfterNext[1] = 0;
+        for (int day = prices.length - 1; day >= 0; day--) {
+            int buy = -prices[day] + dp[day + 1][1];
+            int skipBuy = dp[day + 1][0];
+            dp[day][0] = Math.max(buy, skipBuy);
 
-        for (int day = prices.length; day >= 1; day--) {
-            for (int holdStock = 0; holdStock <= 1; holdStock++) {
-                int profit = 0;
-                if (holdStock == 0) {
-                    int buyStock = -prices[day - 1] + nextDay[1];
-                    int skipBuy = nextDay[0];
-
-                    profit = Math.max(buyStock, skipBuy);
-                } else {
-                    int sellStock = prices[day - 1] + dayAfterNext[0];
-                    int skipSell = nextDay[1];
-
-                    profit = Math.max(sellStock, skipSell);
-                }
-                currentDay[holdStock] = profit;
-            }
-
-            int[] temp = dayAfterNext;
-            dayAfterNext = nextDay;
-            nextDay = currentDay;
-            currentDay = temp;
+            int sell = prices[day] + dp[day + 2][0];
+            int skipSell = dp[day + 1][1];
+            dp[day][1] = Math.max(sell, skipSell);
         }
 
-        return nextDay[0];
+        return dp[0][0];
+    }
+}
+
+
+//Optimal implementation
+
+class Solution {
+    public int maxProfit(int[] prices) {
+        // Since dp[day][*] depends on dp[day + 1][*] and dp[day + 2][*] , we use three arrays (currentRow, nextRow, rowAfterNext) instead of a full DP table
+        int[] currentRow = new int[2];
+        int[] nextRow = new int[2];
+        int[] rowAfterNext = new int[2];
+
+        nextRow[0] = nextRow[1] = rowAfterNext[0] = rowAfterNext[1] = 0;
+
+        for (int day = prices.length - 1; day >= 0; day--) {
+            int buy = -prices[day] + nextRow[1];
+            int skipBuy = nextRow[0];
+            currentRow[0] = Math.max(buy, skipBuy);
+
+            int sell = prices[day] + rowAfterNext[0];
+            int skipSell = nextRow[1];
+            currentRow[1] = Math.max(sell, skipSell);
+
+            int[] temp = rowAfterNext;
+            rowAfterNext = nextRow;
+            nextRow = currentRow;
+            currentRow = temp;
+        }
+
+        return nextRow[0];
     }
 }
