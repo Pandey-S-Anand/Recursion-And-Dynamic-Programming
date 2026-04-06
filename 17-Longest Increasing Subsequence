@@ -1,43 +1,6 @@
 //Bruteforce Approach
 
 class Solution {
-    private int maxLISLength;
-
-    public int lengthOfLIS(int[] arr) {
-        maxLISLength = 0;
-        generateAllSubsequences(arr, 0, new ArrayList<>());
-        return maxLISLength;
-    }
-
-    private void generateAllSubsequences(int[] arr, int index, List<Integer> subsequence) {
-        if (index == arr.length) {
-            if (isIncreasingSubsequence(subsequence) && subsequence.size() > maxLISLength) {
-                maxLISLength = subsequence.size();
-            }
-            return;
-        }
-
-        subsequence.add(arr[index]);
-        generateAllSubsequences(arr, index + 1, subsequence);
-        subsequence.remove(subsequence.size() - 1);
-        generateAllSubsequences(arr, index + 1, subsequence);
-    }
-
-    private boolean isIncreasingSubsequence(List<Integer> subsequence) {
-        for (int i = 1; i < subsequence.size(); i++) {
-            if (subsequence.get(i) <= subsequence.get(i - 1)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-}
-
-
-//Improved Approach
-
-class Solution {
     public int lengthOfLIS(int[] arr) {
         return lengthOfLIS(arr, 0, -1);
     }
@@ -48,7 +11,7 @@ class Solution {
         }
 
         // Option 1: Include the current element in the subsequence (if it creates an increasing order)
-        int include = 0;
+        int included = Integer.MIN_VALUE;
         /*
          * Check if the current element is either the first element of the subsequence
          * (lastIncludedIdx == -1) or greater than the last included element in the current subsequence.
@@ -56,34 +19,55 @@ class Solution {
          * lastIncludedIdx = -1 is used as a base case to indicate no prior element in the subsequence, 
          * allowing any element to start a new subsequence.
          * 
-         * For other values, lastIncludedIdx can only take values from -1 up to one less than the current index
+         * lastIncludedIdx can only take values from -1 up to one less than the current index
          */
         if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-            include = 1 + lengthOfLIS(arr, index + 1, index);
+            included = 1 + lengthOfLIS(arr, index + 1, index);
         }
 
         // Option 2: Exclude the current element and move to the next index
-        int exclude = lengthOfLIS(arr, index + 1, lastIncludedIdx);
+        int excluded = lengthOfLIS(arr, index + 1, lastIncludedIdx);
 
         // Return the maximum length of LIS obtained by either including or excluding the current element
-        return Math.max(include, exclude);
+        return Math.max(included, excluded);
     }
 }
 
 
-//Further Improved Approach
+//Improved Approach
 
 class Solution {
     /*
-     cache[index][lastIncludedIdx + 1]
-     represents the length of the longest increasing subsequence starting from index index,
-     given that the previous element included in the subsequence is at index lastIncludedIdx.
+    * Memoization:
+    * dp[index][lastIncludedIdx + 1] stores the maximum length of LIS
+    * that can be formed starting from the given index,
+    * given the last included element's index.
+    *
+    * Why (lastIncludedIdx + 1)?
+    * - lastIncludedIdx can be -1 (no element chosen yet)
+    * - Array indices cannot be negative
+    * - So we shift it by +1 to map:
+    *      -1 → 0
+    *       0 → 1
+    *       1 → 2
+    *       ...
+    *
+    * Meaning of values:
+    * - null  → this state has NOT been computed yet
+    * - value → maximum LIS length for this state
+    *
+    * State definition:
+    * - index → current index in the array
+    * - lastIncludedIdx → index of the last element included in the subsequence
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
     */
-    private int[][] cache;
+    private Integer[][] dp;
 
     public int lengthOfLIS(int[] arr) {
-        cache = new int[arr.length][arr.length + 1];
-        intializeCache();
+        dp = new Integer[arr.length][arr.length + 1];
         return lengthOfLIS(arr, 0, -1);
     }
 
@@ -92,87 +76,114 @@ class Solution {
             return 0;
         }
 
-        if (cache[index][lastIncludedIdx + 1] != -1) {
-            return cache[index][lastIncludedIdx + 1];
+        if (dp[index][lastIncludedIdx + 1] != null) {
+            return dp[index][lastIncludedIdx + 1];
         }
 
-        int include = 0;
+        int included = Integer.MIN_VALUE;
         if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-            include = 1 + lengthOfLIS(arr, index + 1, index);
+            included = 1 + lengthOfLIS(arr, index + 1, index);
         }
 
-        int exclude = lengthOfLIS(arr, index + 1, lastIncludedIdx);
+        int excluded = lengthOfLIS(arr, index + 1, lastIncludedIdx);
 
-        return cache[index][lastIncludedIdx + 1] = Math.max(include, exclude);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[index][lastIncludedIdx + 1] = Math.max(included, excluded);
     }
 }
 
 
-//Good Approach
+//Better Approach
+
+//Naive implementation
 
 class Solution {
+    /*
+    * dp[index][lastIncludedIdx + 1] represents:
+    * "Maximum length of LIS that can be formed starting from index 'index',
+    * given the last included element's index."
+    */
     public int lengthOfLIS(int[] arr) {
-        /*
-         * dp[i][j] represents the length of the longest increasing subsequence starting
-         * from index i to arr.length-1, with j-1 as the last included index that can be used in the subsequence.
-         */
         int[][] dp = new int[arr.length + 1][arr.length + 1];
 
-        dp[arr.length][0] = 0;
+        for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+            dp[arr.length][lastIncludedIdx + 1] = 0;
+        }
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIdx = -1; lastIncludedIdx <= index - 1; lastIncludedIdx++) {
-                int include = 0;
-                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-                    /*
-                     * In recursion, we directly work with array indices (from 0 to n-1), and the case where lastIncludedIndex is -1 is naturally handled by the recursion.
-                     * However, in the tabulation approach, we need to store each original 'lastIncludedIndex' as 'lastIncludedIndex + 1' in the DP table.
-                     * This +1 shift allows us to handle the case where 'lastIncludedIndex' is -1 (which represents no element being included yet).
-                     * By storing -1 at index 0, we can properly reference 'lastIncludedIndex' in the DP table using 'index + 1'.
-                     * Therefore, whenever we need to reference 'lastIncludedIndex' in the DP table,  we use 'index + 1' (i.e., original array index + 1).
-                     */
-                    include = 1 + dp[index + 1][index + 1];
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+                /*
+                * In tabulation, we store lastIncludedIdx as (lastIncludedIdx + 1)
+                * to handle the case when lastIncludedIdx = -1.
+                *
+                * Since array indices cannot be negative, this shift maps:
+                *   -1 → 0, 0 → 1, 1 → 2, ...
+                *
+                * Hence, whenever accessing dp, we use (lastIncludedIdx + 1).
+                */
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[i]) {
+                    included = 1 + dp[i + 1][i + 1];
                 }
 
-                int exclude = dp[index + 1][lastIncludedIdx + 1];
+                int excluded = dp[i + 1][lastIncludedIdx + 1];
 
-                dp[index][lastIncludedIdx + 1] = Math.max(include, exclude);
+                dp[i][lastIncludedIdx + 1] = Math.max(included, excluded);
             }
         }
-        /*
-         * dp[0][0], which represents the maximum length of the increasing subsequence
-         * starting from index 0 till the last index with no elements included before it
-         * (simulating the lastIncludedIdx = -1 condition in the top-down approach).
-         */
+
         return dp[0][0];
     }
 }
 
 
-//Better approach
+
+//Better Implementation
 
 class Solution {
     public int lengthOfLIS(int[] arr) {
+        int[][] dp = new int[arr.length + 1][arr.length + 1];
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[i]) {
+                    included = 1 + dp[i + 1][i + 1];
+                }
+
+                int excluded = dp[i + 1][lastIncludedIdx + 1];
+
+                dp[i][lastIncludedIdx + 1] = Math.max(included, excluded);
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+
+
+//Optimal implementation
+
+class Solution {
+    public int lengthOfLIS(int[] arr) {
+        // Since dp[index][*] depends only on dp[index + 1][*], we use two 1D arrays (currentRow and nextRow) instead of a full 2D dp table
         int[] currentRow = new int[arr.length + 1];
         int[] nextRow = new int[arr.length + 1];
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIdx = index-1; lastIncludedIdx >= -1; lastIncludedIdx--) {
-                int include = 0;
-                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-                    include = 1 + nextRow[index + 1];
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[i]) {
+                    included = 1 + nextRow[i + 1];
                 }
 
-                int exclude = nextRow[lastIncludedIdx + 1];
+                int excluded = nextRow[lastIncludedIdx + 1];
 
-                currentRow[lastIncludedIdx + 1] = Math.max(include, exclude);
+                currentRow[lastIncludedIdx + 1] = Math.max(included, excluded);
             }
+
             int[] temp = currentRow;
             currentRow = nextRow;
             nextRow = temp;
@@ -182,35 +193,6 @@ class Solution {
     }
 }
 
-
-//Optimal approach
-
-class Solution {
-    public int lengthOfLIS(int[] arr) {
-        int[] currentRow = new int[arr.length + 1];
-        int[] nextRow = new int[arr.length + 1];
-
-        nextRow[0] = 0;
-
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIdx = -1; lastIncludedIdx <= index - 1; lastIncludedIdx++) {
-                int include = 0;
-                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-                    include = 1 + nextRow[index + 1];
-                }
-
-                int exclude = nextRow[lastIncludedIdx + 1];
-
-                currentRow[lastIncludedIdx + 1] = Math.max(include, exclude);
-            }
-            int[] temp = currentRow;
-            currentRow = nextRow;
-            nextRow = temp;
-        }
-
-        return nextRow[0];
-    }
-}
 
 //Alternate DP approach
 
@@ -227,7 +209,7 @@ class Solution {
 
    Finding Potential LIS Candidates:
     For each element `arr[i]`, we look at all previous elements `arr[j]` (where `j < i`).
-    If `arr[i]` is greater than `arr[j]`, then `arr[i]` can extend the increasing subsequence that ends at `arr[j]`.
+    If `arr[i]` is greater than `arr[j]`, then `arr[i]` can extend the increasing subsequence that ends at `arr[j]` by 1.
 
    Updating the LIS Length for Each `i`:
    - For each valid candidate `arr[j]`, we retrieve the LIS ending at `j` (stored in `dp[j]`).
@@ -240,7 +222,7 @@ class Solution {
 
 class Solution {
     public int lengthOfLIS(int[] arr) {
-        // dp[i] = length of longest increasing subsequence ending at index i
+        // dp[i] = length of LIS ending at index i
         int[] dp = new int[arr.length];
         int overallMaxLengthLIS = 0;
 
@@ -252,9 +234,6 @@ class Solution {
                 }
             }
             dp[i] = maxLISLengthEndingBeforeI + 1;
-        }
-
-        for (int i = 0; i < arr.length; i++) {
             overallMaxLengthLIS = Math.max(overallMaxLengthLIS, dp[i]);
         }
 
@@ -263,7 +242,7 @@ class Solution {
 }
 
 
-//Further optimised Approach
+//Optimal approach
 
 /*
  *   arr = [2, 5, 3, 7, 11, 8, 10, 13, 6]
