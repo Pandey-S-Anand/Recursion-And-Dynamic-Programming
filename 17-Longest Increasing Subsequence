@@ -285,7 +285,7 @@ class Solution {
         int length = 0;
 
         for (int num : arr) {
-            int index = lowerBound(tail, length, num);
+            int index = findLowerBound(tail, length, num);
 
             if (index == length) {
                 length++;
@@ -297,13 +297,14 @@ class Solution {
         return length;
     }
 
-    private int lowerBound(int[] arr, int n, int x) {
+    //Find the smallest element that is greater than the target
+    private int findLowerBound(int[] arr, int n, int target) {
         int low = 0, high = n - 1, lowerBound = n;
 
         while (low <= high) {
             int mid = low + (high - low) / 2;
 
-            if (arr[mid] >= x) {
+            if (arr[mid] >= target) {
                 lowerBound = mid;
                 high = mid - 1;
             } else {
