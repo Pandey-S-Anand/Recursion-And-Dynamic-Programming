@@ -222,7 +222,7 @@ class Solution {
 
 class Solution {
     public int lengthOfLIS(int[] arr) {
-        // dp[i] = length of LIS ending at index i
+        // dp[i] = max length LIS ending at index i
         int[] dp = new int[arr.length];
         int overallMaxLengthLIS = 0;
 
