@@ -32,64 +32,76 @@ class Solution {
 //Optimal Approach
 
 class Solution {
-    public ArrayList<Integer> longestIncreasingSubsequence(int n, int arr[]) {
-        int[][] dp = new int[n + 1][n + 1];
+    public ArrayList<Integer> getLIS(int arr[]) {
+        int maxLengthLis = 0;
+        int lisEndIndex = -1; // 'lisEndIndex' points to the last element of the LIS (i.e., where LIS ends)
 
-        for (int index = n - 1; index >= 0; index--) {
-            for (int lastIncludedIdx = index - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
-                int include = 0;
-                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-                    include = 1 + dp[index + 1][index + 1];
+        // dp[i] → Length of the longest increasing subsequence ending at index i
+        int[] dp = new int[arr.length];
+        /*
+        prevIndex[i] → Stores the index of the previous element in the LIS 
+        ending at index i (i.e., the element chosen just before arr[i] in that subsequence)  
+        */
+        int[] previousIndex = new int[arr.length];
+
+        for (int i = 0; i < arr.length; i++) {
+            int bestPrevLISLength = 0;
+            int bestPrevLISIdx = -1;
+
+            for (int j = 0; j < i; j++) {
+                if (arr[j] < arr[i]) {
+                    if (dp[j] > bestPrevLISLength) {
+                        bestPrevLISLength = dp[j];
+                        bestPrevLISIdx = j;
+                    }
                 }
-                int exclude = dp[index + 1][lastIncludedIdx + 1];
-                dp[index][lastIncludedIdx + 1] = Math.max(include, exclude);
+            }
+
+            previousIndex[i] = bestPrevLISIdx;
+
+            dp[i] = bestPrevLISLength + 1;
+
+            if (dp[i] > maxLengthLis) {
+                maxLengthLis = dp[i];
+                lisEndIndex = i;
             }
         }
 
-        ArrayList<Integer> longestIncreasingSubsequence = new ArrayList<>();
-        int lastIncludedIdx = -1;
-        // dp[0][0] stores the length of the longest increasing subsequence (LIS)
-        int currentLISLength = dp[0][0]; // Target length of the LIS sequence to stop at
+        /*
+        * We backtrack the LIS in reverse using the parent pointers:
+        *
+        * previousIndex[i] tells us:
+        * "which element came just before arr[i] in the LIS"
+        *
+        * So we keep moving:
+        * current index → its previous index → its previous → ...
+        * until we reach -1 (start of subsequence)
+        *
+        */
+        ArrayList<Integer> lis = new ArrayList<>();
 
-        for (int index = 0; index < n; index++) {
-            int include = 0;
-            if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
-                include = 1 + dp[index + 1][index + 1];
-            }
-            int exclude = dp[index + 1][lastIncludedIdx + 1];
-            /*
-             * The value dp[index][lastIncludedIdx + 1] stores the maximum possible length of the LIS
-             * starting from index `index`. We can use this value to decide whether to include
-             * the current element in our result. If including the element contributes to forming the
-             * LIS, we add it to the result; otherwise, we skip it.
-             */
+        int idx = lisEndIndex;
 
-            /*
-             * In reconstructing the LIS, the condition include >= exclude not only ensures
-             * we get the longest increasing subsequence, but it also guarantees the
-             * lexicographically smallest version when multiple LIS of the same maximum
-             * length exist. By including elements as early as possible, we make sure each
-             * position in our LIS is filled by the first eligible element, resulting in the
-             * smallest possible subsequence lexicographically.
-             * 
-             * The = in include >= exclude is essential because it lets us prioritize the
-             * earlier element in the array whenever two subsequences of the same length are
-             * possible. If we used only include > exclude (excluding the =), then in cases
-             * where include and exclude yield the same length, we would skip the current
-             * element in favor of a later one. This would allow later elements to enter the
-             * LIS, creating a lexicographically larger sequence as it would favor elements
-             * from later indices in the array.
-             */
-            if (include >= exclude) {
-                longestIncreasingSubsequence.add(arr[index]);
-                lastIncludedIdx = index;
-                currentLISLength--; // Reduce the target LIS length by 1
-                if (currentLISLength == 0) {
-                    break; // Stop once we've collected the full LIS
-                }
-            }
+        while (previousIndex[idx] != -1) {
+            lis.add(arr[idx]);
+            idx = previousIndex[idx];
         }
 
-        return longestIncreasingSubsequence;
+        /*
+        * At this point, 'idx' is the starting element of the LIS
+        * (its previousIndex is -1), so we add it as well.
+        */
+        lis.add(arr[idx]);
+
+        /*
+        * The elements were collected while backtracking from end → start of the LIS.
+        * Hence, the list is currently in reverse order.
+        *
+        * We reverse it to restore the correct sequence (start → end of LIS).
+        */
+        Collections.reverse(lis);
+        Collections.reverse(lis);
+
+        return lis;
     }
 }
