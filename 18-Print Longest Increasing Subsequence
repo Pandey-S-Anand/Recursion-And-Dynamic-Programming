@@ -100,7 +100,6 @@ class Solution {
         * We reverse it to restore the correct sequence (start → end of LIS).
         */
         Collections.reverse(lis);
-        Collections.reverse(lis);
 
         return lis;
     }
