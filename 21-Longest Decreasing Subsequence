@@ -241,10 +241,10 @@ public class Solution {
  * Reason for substitution:
  *   We always replace with a greater value (when possible) even though
  *   the current length of `tail` stays the same, because:
- *     ? A greater tail value opens up more room for future numbers
- *       to extend the subsequence.
- *     ? The greater the value at position i, the higher the chance
- *       that a later array element < tail[i], letting us grow length.
+ *     1: A greater tail value opens up more room for future numbers
+ *        to extend the subsequence.
+ *     2: The greater the value at position i, the higher the chance
+ *        that a later array element < tail[i], letting us grow length.
  *
  *
  * Mini example: arr = [1, 10, 8]
