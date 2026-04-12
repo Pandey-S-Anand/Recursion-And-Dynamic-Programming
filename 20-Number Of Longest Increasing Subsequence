@@ -175,7 +175,8 @@ class Solution {
     }
 }
 
-//Better implementation 
+
+//Optimal implementation 
 
 class Solution {
     public int findNumberOfLIS(int[] arr) {
@@ -246,54 +247,77 @@ class Solution {
 }
 
 
-//Optimal implementation 
+//Alternate DP approach
 
 class Solution {
     public int findNumberOfLIS(int[] arr) {
         /*
-        * Space Optimization (2D → 1D):
-        *
-        * Since each state depends only on dp[i+1][*] and count[i+1][*],
-        * we can reuse the same arrays instead of maintaining a separate current row.
-        *
-        * We update in reverse order so that required values are not overwritten
-        * before being used.
-        */
-        int[] nextRowDP = new int[arr.length + 1];
-        int[] nextRowCount = new int[arr.length + 1];
+         * dp[i] → Length of the Longest Increasing Subsequence (LIS)
+         *         ending at index i
+         *
+         * count[i] → Number of LIS of length dp[i]
+         *            that end at index i
+         */
+        int[] dp = new int[arr.length];
+        int[] count = new int[arr.length];
 
-        for (int lastIncludedIdx = -1; lastIncludedIdx < arr.length; lastIncludedIdx++) {
-            nextRowDP[lastIncludedIdx + 1] = 0;
-            nextRowCount[lastIncludedIdx + 1] = 1;
+        int maxLengthLIS = 0;
+
+        for (int i = 0; i < arr.length; i++) {
+            int bestPrevLengthLIS = 0; // best LIS length among all j < i
+            int ways = 0; // number of ways to achieve that best length
+
+            for (int j = 0; j < i; j++) {
+                if (arr[j] < arr[i]) {
+                    /*
+                    * Case 1: Found a strictly better (longer) LIS ending at j
+                    * → Update best length and reset count (ways)
+                    */
+                    if (dp[j] > bestPrevLengthLIS) {
+                        bestPrevLengthLIS = dp[j];
+                        ways = count[j];
+                    } else if (dp[j] == bestPrevLengthLIS) {
+                        /*
+                        * Case 2: Found another LIS of same best length
+                        * → Accumulate number of ways
+                        */
+                        ways += count[j];
+                    }
+                }
+            }
+
+            /*
+             * Length of LIS ending at i:
+             * Extend the best previous LIS by including arr[i]
+             */
+            dp[i] = bestPrevLengthLIS + 1;
+
+            maxLengthLIS = Math.max(maxLengthLIS, dp[i]);
+
+            /*
+             * Count logic:
+             *
+             * - If no valid previous element exists (ways == 0),
+             *   then the element itself forms an LIS of length 1 → count = 1
+             *
+             * - Otherwise, we inherit the number of ways from previous best LIS,
+             *   since we are just appending arr[i] to those subsequences
+             */
+            count[i] = (ways == 0) ? 1 : ways;
         }
 
-        for (int i = arr.length - 1; i >= 0; i--) {
-            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
-                int[] includeResult = new int[2];
+        /*
+         * Final answer:
+         * Sum counts of all indices where LIS length is maximum
+         */
+        int totalCount = 0;
 
-                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[i]) {
-                    includeResult[0] = 1 + nextRowDP[i + 1];
-                    includeResult[1] = nextRowCount[i + 1];
-                }
-
-                int[] excludeResult = new int[2];
-
-                excludeResult[0] = nextRowDP[lastIncludedIdx + 1];
-                excludeResult[1] = nextRowCount[lastIncludedIdx + 1];
-
-                if (includeResult[0] > excludeResult[0]) {
-                    nextRowDP[lastIncludedIdx + 1] = includeResult[0];
-                    nextRowCount[lastIncludedIdx + 1] = includeResult[1];
-                } else if (excludeResult[0] > includeResult[0]) {
-                    nextRowDP[lastIncludedIdx + 1] = excludeResult[0];
-                    nextRowCount[lastIncludedIdx + 1] = excludeResult[1];
-                } else {
-                    nextRowDP[lastIncludedIdx + 1] = includeResult[0];
-                    nextRowCount[lastIncludedIdx + 1] = includeResult[1] + excludeResult[1];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            if (dp[i] == maxLengthLIS) {
+                totalCount += count[i];
             }
         }
 
-        return nextRowCount[0];
+        return totalCount;
     }
 }
