@@ -1,96 +1,144 @@
 /*
-In a valid bitonic subsequence, the peak element should be the same for both the Longest Increasing Subsequence (LIS) 
-and the Longest Decreasing Subsequence (LDS).
+ * Problem: Longest Bitonic Subsequence (LBS)
+ *
+ * A bitonic subsequence is one which:
+ * - First strictly increases (LIS)
+ * - Then strictly decreases (LDS)
+ *
+ * The peak element is common to both parts.
+ *
+ * ------------------------------------------------------------
+ * Example:
+ *
+ * arr[] = [1, 11, 2, 10, 4, 5, 2, 1]
+ *
+ * Some longest bitonic subsequences:
+ *
+ * 1) [1, 2, 10, 4, 2, 1]
+ *    Increasing part : [1, 2, 10]
+ *    Decreasing part : [10, 4, 2, 1]
+ *
+ * 2) [1, 2, 10, 5, 2, 1]
+ *    Increasing part : [1, 2, 10]
+ *    Decreasing part : [10, 5, 2, 1]
+ *
+ * 3) [1, 11, 10, 4, 2, 1]
+ *    Increasing part : [1, 11]
+ *    Decreasing part : [11, 10, 4, 2, 1]
+ *
+ * 4) [1, 11, 10, 5, 2, 1]
+ *    Increasing part : [1, 11]
+ *    Decreasing part : [11, 10, 5, 2, 1]
+ *
+ * ------------------------------------------------------------
+ * Key Concept:
+ *
+ * In a valid bitonic subsequence:
+ * - The sequence strictly increases up to a peak element.
+ * - After the peak, it strictly decreases.
+ * - The peak is counted in both LIS and LDS.
+ *
+ * ------------------------------------------------------------
+ * Approach:
+ *
+ * 1) Compute LIS[i]:
+ *    - Length of the Longest Increasing Subsequence ending at index i
+ *
+ * 2) Compute LDS[i]:
+ *    - Length of the Longest Decreasing Subsequence starting from index i
+ *
+ * 3) For each index i, treat it as the peak:
+ *
+ *       Bitonic Length = LIS[i] + LDS[i] - 1
+ *
+ *    (Subtract 1 to avoid counting the peak element twice)
+ *
+ * 4) The maximum value across all i gives the answer
+ *
+ * ------------------------------------------------------------
+ * Insight:
+ *
+ * - Every index acts as a potential peak
+ * - We combine "best increasing till i" and "best decreasing from i"
+ * - This ensures continuity and valid bitonic structure
+ */
 
-Here’s the reasoning:
-
-1. The sequence begins with an increasing phase (LIS), which reaches a peak element.
-2. After the peak, the sequence immediately transitions into a decreasing phase (LDS).
-3. The peak element serves as the common element between the increasing and decreasing phases, ensuring a continuous sequence 
-   without any breaks. This guarantees that it forms a valid bitonic subsequence.
-
-For example:
-- In the sequence {1, 2, 10, 4, 2, 1}, the element 10 is the peak. It appears at the end of the LIS ({1, 2, 10}) 
-  and the beginning of the LDS ({10, 4, 2, 1}).
-
-Consider the input:
-- n = 8, nums[] = [1, 11, 2, 10, 4, 5, 2, 1]
-- The output is 6, as the longest bitonic subsequence {1, 2, 10, 4, 2, 1} has a length of 6.
-
-However, {1, 2, 10, 5, 2, 1} is **not** a valid bitonic subsequence, as it does not follow the required peak structure.
-
-To find the longest bitonic subsequence:
-1. **LIS up to the current index**: This represents the length of the longest increasing subsequence ending at that specific index.
-2. **LDS starting from the current index**: This gives the length of the longest decreasing subsequence starting from that index to the end of the array.
-
-By combining these two values for each index i:
-- Calculate the bitonic subsequence length as `LIS[i] + LDS[i] - 1` (subtracting 1 to avoid double-counting the peak element).
-
-The maximum value of these bitonic subsequences across all indices i will give the length of the longest bitonic subsequence.
-*/
-
-
-//Bruteforce Approach
+//Bruteforce approach
 
 class Solution {
-    public static int LongestBitonicSequence(int n, int[] arr) {
+    public static int longestBitonicSequence(int n, int[] arr) {
         if (n < 3) {
             return 0; // A valid bitonic sequence requires at least 3 elements.
         }
 
-        int longestBitonicSubsequence = 0;
+        int maxLengthBitonicSubsequence = 0;
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < arr.length; i++) {
             /*
-             In the recursive implementation for calculating the Longest Increasing Subsequence (LIS) 
-             and Longest Decreasing Subsequence (LDS):
+             * - By treating each index as the end of a subarray, the LIS at that index
+             *   represents the longest increasing subsequence ending there.
+             *
+             * - Similarly, by treating each index as the start of a subarray, the LDS at
+             *   that index represents the longest decreasing subsequence starting from there.
+             */
+            int lis = findLISEndingAt(arr, 0, i + 1, -1);
+            int lds = findLDSStartingAt(arr, i, arr.length, -1);
 
-             - By treating each index as the end of a subarray, the LIS up to a given index becomes equivalent to the LIS ending at that index.
-
-             - Similarly, by treating each index as the start of a subarray, the LDS up to a given index becomes equivalent to the LDS starting at that index.
-            */
-            int lis = lengthOfLIS(arr, 0, i + 1, -1);
-            int lds = lengthOfLDS(arr, i, -1);
             /*
              * In a subarray of size 3 or more:
+             *
              * - A LIS value of 1 indicates that the considered subarray is strictly
-             * decreasing (e.g., {5, 3, 2}).
+             *   decreasing (e.g., {5, 3, 2}).
+             *
              * - A LDS value of 1 indicates that the considered subarray is strictly
-             * increasing (e.g., {2, 3, 5}).
-             * 
-             * For a valid bitonic subsequence, there must be both an increasing phase and a
-             * decreasing phase. Therefore, if either the LIS or LDS value is 1, it means
-             * that there is no valid transition between the increasing and decreasing parts of
-             * the subsequence. This makes the current combination invalid as a bitonic subsequence.
+             *   increasing (e.g., {2, 3, 5}).
+             *
+             * For a valid bitonic subsequence, there must be both an increasing phase
+             * and a decreasing phase.
+             *
+             * Therefore, if either LIS or LDS is 1, it means no valid transition exists,
+             * making it an invalid bitonic subsequence.
              */
-
             if (lis == 1 || lds == 1) {
                 continue;
             }
 
-            longestBitonicSubsequence = Math.max(longestBitonicSubsequence, (lis + lds - 1));
+            maxLengthBitonicSubsequence = Math.max(maxLengthBitonicSubsequence, lis + lds - 1);
         }
 
-        return longestBitonicSubsequence;
+        return maxLengthBitonicSubsequence;
     }
 
-    private static int lengthOfLIS(int[] arr, int index, int n, int lastIncludedIdx) {
+    private static int findLISEndingAt(int[] arr, int index, int n, int lastIncludedIdx) {
         if (index == n) {
             return 0;
         }
 
+        // Option 1: Include the current element in the subsequence (if it creates an increasing order)
         int include = 0;
-        if (lastIncludedIdx == -1 || arr[index] > arr[lastIncludedIdx]) {
-            include = 1 + lengthOfLIS(arr, index + 1, n, index);
+
+        /*
+         * Check if the current element is either the first element of the subsequence
+         * (lastIncludedIdx == -1) or greater than the last included element in the current subsequence.
+         * 
+         * lastIncludedIdx = -1 is used as a base case to indicate no prior element in the subsequence, 
+         * allowing any element to start a new subsequence.
+         * 
+         * lastIncludedIdx can only take values from -1 up to one less than the current index
+         */
+        if (lastIncludedIdx == -1 || arr[lastIncludedIdx] < arr[index]) {
+            include = 1 + findLISEndingAt(arr, index + 1, n, index);
         }
 
-        int exclude = lengthOfLIS(arr, index + 1, n, lastIncludedIdx);
+        // Option 2: Exclude the current element and move to the next index
+        int exclude = findLISEndingAt(arr, index + 1, n, lastIncludedIdx);
 
+        // Return the maximum length of LIS obtained by either including or excluding the current element
         return Math.max(include, exclude);
     }
 
-    private static int lengthOfLDS(int[] arr, int index, int lastIncludedIdx) {
-        if (index == arr.length) {
+    private static int findLDSStartingAt(int[] arr, int index, int n, int lastIncludedIdx) {
+        if (index == n) {
             return 0;
         }
 
@@ -98,81 +146,22 @@ class Solution {
         int include = 0;
         /*
          * Check if the current element is either the first element of the subsequence
-         * (lastIncludedIdx == -1) or less than the last included element in the current subsequence.
+         * (lastIncludedIdx == -1) or smaller than the last included element in the current subsequence.
          * 
-         * lastIncludedIdx = -1 is used as a base case to indicate no prior element in
-         * the subsequence, allowing any element to start a new subsequence.
+         * lastIncludedIdx = -1 is used as a base case to indicate no prior element in the subsequence, 
+         * allowing any element to start a new subsequence.
          * 
-         * For other values, lastIncludedIdx can only take values from -1 up to one less than the current index
+         * lastIncludedIdx can only take values from -1 up to one less than the current index
          */
-        if (lastIncludedIdx == -1 || arr[index] < arr[lastIncludedIdx]) {
-            include = 1 + lengthOfLDS(arr, index + 1, index);
+        if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[index]) {
+            include = 1 + findLDSStartingAt(arr, index + 1, n, index);
         }
 
         // Option 2: Exclude the current element and move to the next index
-        int exclude = lengthOfLDS(arr, index + 1, lastIncludedIdx);
+        int exclude = findLDSStartingAt(arr, index + 1, n, lastIncludedIdx);
 
         // Return the maximum length of LDS obtained by either including or excluding the current element
         return Math.max(include, exclude);
-    }
-}
-
-//Better Approach
-
-class Solution {
-    public static int LongestBitonicSequence(int n, int[] arr) {
-        if (n < 3) {
-            return 0;
-        }
-
-        int[] lisDp = lengthOfLIS(arr, n);
-        int[] ldsDp = lengthOfLDS(arr, n);
-
-        int longestBitonicSubsequence = 0;
-
-        for (int i = 0; i < n; i++) {
-            if (lisDp[i] == 1 || ldsDp[i] == 1) {
-                continue;
-            }
-
-            longestBitonicSubsequence = Math.max(longestBitonicSubsequence, lisDp[i] + ldsDp[i] - 1);
-        }
-
-        return longestBitonicSubsequence;
-    }
-
-    private static int[] lengthOfLIS(int[] arr, int n) {
-        // dp[i] = length of longest increasing subsequence ending at index i
-        int[] dp = new int[n];
-
-        for (int i = 0; i < n; i++) {
-            int maxLISLengthBeforeIndexI = 0;
-            for (int j = 0; j < i; j++) {
-                if (arr[i] > arr[j]) {
-                    maxLISLengthBeforeIndexI = Math.max(maxLISLengthBeforeIndexI, dp[j]);
-                }
-            }
-            dp[i] = maxLISLengthBeforeIndexI + 1;
-        }
-
-        return dp;
-    }
-
-    private static int[] lengthOfLDS(int[] arr, int n) {
-        // dp[i] = length of longest increasing subsequence starting at index i
-        int[] dp = new int[n];
-
-        for (int i = n - 1; i >= 0; i--) {
-            int maxLDSLengthAfterIndexI = 0;
-            for (int j = i + 1; j < n; j++) {
-                if (arr[i] > arr[j]) { // Decreasing subsequence condition
-                    maxLDSLengthAfterIndexI = Math.max(maxLDSLengthAfterIndexI, dp[j]);
-                }
-            }
-            dp[i] = maxLDSLengthAfterIndexI + 1;
-        }
-
-        return dp;
     }
 }
 
@@ -180,79 +169,87 @@ class Solution {
 //Optimal Approach
 
 class Solution {
-    public static int LongestBitonicSequence(int n, int[] arr) {
+    public static int longestBitonicSequence(int n, int[] arr) {
         if (n < 3) {
             return 0;
         }
 
-        int[] lisDp = lengthOfLIS(arr, n);
-        int[] ldsDp = lengthOfLDS(arr, n);
+        int maxLengthBitonicSubsequence = 0;
 
-        int longestBitonicSubsequence = 0;
+        int lis[] = computeLISEndingAtEachIndex(arr);
+        int lds[] = computeLDSStartingAtEachIndex(arr);
 
-        for (int i = 0; i < n; i++) {
-            if (lisDp[i] == 1 || ldsDp[i] == 1) {
+        for (int i = 0; i < arr.length; i++) {
+
+            if (lis[i] == 1 || lds[i] == 1) {
                 continue;
             }
 
-            longestBitonicSubsequence = Math.max(longestBitonicSubsequence, lisDp[i] + ldsDp[i] - 1);
+            maxLengthBitonicSubsequence = Math.max(maxLengthBitonicSubsequence, lis[i] + lds[i] - 1);
         }
 
-        return longestBitonicSubsequence;
+        return maxLengthBitonicSubsequence;
     }
 
-    private static int[] lengthOfLIS(int[] arr, int n) {
-        int[] lis = new int[n];
-        int[] tail = new int[n];
-        int length = 0;
+    /*
+    * Computes the length of the Longest Increasing Subsequence (LIS)
+    * end at each index.
+    *
+    * Idea:
+    * For every index i, we look at all elements to its left (j < i).
+    * If arr[i] > arr[j], then we can extend the increasing subsequence
+    * ending at j by including arr[i].
+    *
+    * So, for each i:
+    *   dp[i] = 1 + max(dp[j]) for all j < i where arr[i] > arr[j]
+    *
+    * If no such j exists, dp[i] = 1 (the element itself).
+    */
+    private static int[] computeLISEndingAtEachIndex(int[] arr) {
+        // dp[i] = max length LIS ending at index i
+        int[] dp = new int[arr.length];
 
-        for (int i = 0; i < n; i++) {
-            int index = lowerBound(tail, length, arr[i]);
-
-            if (index == length) {
-                length++;
+        for (int i = 0; i < arr.length; i++) {
+            int prevBestLIS = 0;
+            for (int j = 0; j < i; j++) {
+                if (arr[j] < arr[i]) {
+                    prevBestLIS = Math.max(prevBestLIS, dp[j]);
+                }
             }
-
-            tail[index] = arr[i];
-            lis[i] = index + 1;
+            dp[i] = prevBestLIS + 1;
         }
 
-        return lis;
+        return dp;
     }
 
-    private static int[] lengthOfLDS(int[] arr, int n) {
-        int[] lds = new int[n];
-        int[] tail = new int[n];
-        int length = 0;
+    /*
+    * Computes the length of the Longest Decreasing Subsequence (LDS)
+    * starting at each index.
+    *
+    * Idea:
+    * For every index i, we look at all elements to its right (j > i).
+    * If arr[i] > arr[j], then we can extend the decreasing subsequence
+    * starting at j by including arr[i].
+    *
+    * So, for each i:
+    *   dp[i] = 1 + max(dp[j]) for all j > i where arr[i] > arr[j]
+    *
+    * If no such j exists, dp[i] = 1 (the element itself).
+    */
+    private static int[] computeLDSStartingAtEachIndex(int[] arr) {
+        // dp[i] = max length LDS starting at index i
+        int[] dp = new int[arr.length];
 
-        for (int i = n - 1; i >= 0; i--) {
-            int index = lowerBound(tail, length, arr[i]);
-
-            if (index == length) {
-                length++;
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int maxLDSAhead = 0;
+            for (int j = i + 1; j < arr.length; j++) {
+                if (arr[i] > arr[j]) {
+                    maxLDSAhead = Math.max(maxLDSAhead, dp[j]);
+                }
             }
-
-            tail[index] = arr[i];
-            lds[i] = index + 1;
+            dp[i] = maxLDSAhead + 1;
         }
 
-        return lds;
-    }
-
-    private static int lowerBound(int[] arr, int n, int x) {
-        int low = 0, high = n - 1, lowerBound = n;
-
-        while (low <= high) {
-            int mid = low + (high - low) / 2;
-
-            if (arr[mid] >= x) {
-                lowerBound = mid;
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        return lowerBound;
+        return dp;
     }
 }
