@@ -1,52 +1,17 @@
 //Bruteforce approach
 
 public class Solution {
-    private static int maxLISLength;
-
     public static int LDS(int[] arr) {
-        maxLISLength = 0;
-        generateAllSubsequences(arr, 0, new ArrayList<>());
-        return maxLISLength;
+        return findLDSLength(arr, 0, -1);
     }
 
-    private static void generateAllSubsequences(int[] arr, int index, List<Integer> currentSubsequence) {
-        if (index == arr.length) {
-            if (isDecreasingSubsequence(currentSubsequence) && currentSubsequence.size() > maxLISLength) {
-                maxLISLength = currentSubsequence.size();
-            }
-            return;
-        }
-
-        currentSubsequence.add(arr[index]);
-        generateAllSubsequences(arr, index + 1, currentSubsequence);
-        currentSubsequence.remove(currentSubsequence.size() - 1);
-        generateAllSubsequences(arr, index + 1, currentSubsequence);
-    }
-
-    private static boolean isDecreasingSubsequence(List<Integer> subsequence) {
-        for (int i = 1; i < subsequence.size(); i++) {
-            if (subsequence.get(i) >= subsequence.get(i - 1)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-}
-
-//Improved Approach
-
-public class Solution {
-    public static int LDS(int[] arr) {
-        return lengthOfLDS(arr, 0, -1);
-    }
-
-    private static int lengthOfLDS(int[] arr, int index, int lastIncludedIndex) {
+    private static int findLDSLength(int[] arr, int index, int lastIncludedIdx) {
         if (index == arr.length) {
             return 0;
         }
+
         // Option 1: Include the current element in the subsequence (if it creates an decreasing order)
-        int include = 0;
+        int included = Integer.MIN_VALUE;
         /*
          * Check if the current element is either the first element of the subsequence
          * (lastIncludedIdx == -1) or less than the last included element in the current subsequence.
@@ -54,15 +19,17 @@ public class Solution {
          * lastIncludedIdx = -1 is used as a base case to indicate no prior element in the subsequence, 
          * allowing any element to start a new subsequence.
          * 
-         * For other values, lastIncludedIdx can only take values from -1 up to one less than the current index
+         * lastIncludedIdx can only take values from -1 up to one less than the current index
          */
-        if (lastIncludedIndex == -1 || arr[index] < arr[lastIncludedIndex]) {
-            include = 1 + lengthOfLDS(arr, index + 1, index);
+        if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[index]) {
+            included = 1 + findLDSLength(arr, index + 1, index);
         }
+
         // Option 2: Exclude the current element and move to the next index
-        int exclude = lengthOfLDS(arr, index + 1, lastIncludedIndex);
+        int excluded = findLDSLength(arr, index + 1, lastIncludedIdx);
+
         // Return the maximum length of LDS obtained by either including or excluding the current element
-        return Math.max(include, exclude);
+        return Math.max(included, excluded);
     }
 }
 
@@ -70,97 +37,152 @@ public class Solution {
 //Good Approach
 
 public class Solution {
-    private static int[][] cache;
+    /*
+    * Memoization:
+    * dp[index][lastIncludedIdx + 1] stores the maximum length of LDS
+    * that can be formed starting from the given index,
+    * given the last included element's index.
+    *
+    * Why (lastIncludedIdx + 1)?
+    * - lastIncludedIdx can be -1 (no element chosen yet)
+    * - Array indices cannot be negative
+    * - So we shift it by +1 to map:
+    *      -1 ? 0
+    *       0 ? 1
+    *       1 ? 2
+    *       ...
+    *
+    * Meaning of values:
+    * - null  ? this state has NOT been computed yet
+    * - value ? maximum LDS length for this state
+    *
+    * State definition:
+    * - index ? current index in the array
+    * - lastIncludedIdx ? index of the last element included in the subsequence
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private static Integer[][] dp;
 
     public static int LDS(int[] arr) {
-        cache = new int[arr.length][arr.length + 1];
-        intializeCache();
-        return lengthOfLDS(arr, 0, -1);
+        dp = new Integer[arr.length + 1][arr.length];
+        return findLDSLength(arr, 0, -1);
     }
 
-    private static int lengthOfLDS(int[] arr, int index, int lastIncludedIndex) {
+    private static int findLDSLength(int[] arr, int index, int lastIncludedIdx) {
         if (index == arr.length) {
             return 0;
         }
 
-        if (cache[index][lastIncludedIndex + 1] != -1) {
-            return cache[index][lastIncludedIndex + 1];
+        if (dp[index][lastIncludedIdx + 1] != null) {
+            return dp[index][lastIncludedIdx + 1];
         }
 
-        int include = 0;
-        if (lastIncludedIndex == -1 || arr[index] < arr[lastIncludedIndex]) {
-            include = 1 + lengthOfLDS(arr, index + 1, index);
+        int included = Integer.MIN_VALUE;
+
+        if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[index]) {
+            included = 1 + findLDSLength(arr, index + 1, index);
         }
 
-        int exclude = lengthOfLDS(arr, index + 1, lastIncludedIndex);
+        int excluded = findLDSLength(arr, index + 1, lastIncludedIdx);
 
-        return cache[index][lastIncludedIndex + 1] = Math.max(include, exclude);
-    }
-
-    private static void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[index][lastIncludedIdx + 1] = Math.max(included, excluded);
     }
 }
 
 
 //Better approach
 
+//Naive implementation
+
 public class Solution {
     public static int LDS(int[] arr) {
         /*
-         * dp[i][j] represents the length of the longest decreasing subsequence starting
-         * from index i to arr.length-1, with j-1 as the last included index that can be used in the subsequence.
-         */
+        * dp[index][lastIncludedIdx + 1] represents:
+        * "Maximum length of LDS that can be formed starting from index 'index',
+        * given the last included element's index."
+        */
         int[][] dp = new int[arr.length + 1][arr.length + 1];
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int include = 0;
-                if (lastIncludedIndex == -1 || arr[index] < arr[lastIncludedIndex]) {
-                    /*
-                     * In recursion, we directly work with array indices (from 0 to n-1), and the case where lastIncludedIndex is -1 is naturally handled by the recursion.
-                     * However, in the tabulation approach, we need to store each original 'lastIncludedIndex' as 'lastIncludedIndex + 1' in the DP table.
-                     * This +1 shift allows us to handle the case where 'lastIncludedIndex' is -1 (which represents no element being included yet).
-                     * By storing -1 at index 0, we can properly reference 'lastIncludedIndex' in the DP table using 'index + 1'.
-                     * Therefore, whenever we need to reference 'lastIncludedIndex' in the DP table,  we use 'index + 1' (i.e., original array index + 1).
-                     */
-                    include = 1 + dp[index + 1][index + 1];
+        for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+            dp[arr.length][lastIncludedIdx + 1] = 0;
+        }
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+                /*
+                * In tabulation, we store lastIncludedIdx as (lastIncludedIdx + 1)
+                * to handle the case when lastIncludedIdx = -1.
+                *
+                * Since array indices cannot be negative, this shift maps:
+                *   -1 ? 0, 0 ? 1, 1 ? 2, ...
+                *
+                * Hence, whenever accessing dp, we use (lastIncludedIdx + 1).
+                */
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[i]) {
+                    included = 1 + dp[i + 1][i + 1];
                 }
 
-                int exclude = dp[index + 1][lastIncludedIndex + 1];
+                int excluded = dp[i + 1][lastIncludedIdx + 1];
 
-                dp[index][lastIncludedIndex + 1] = Math.max(include, exclude);
+                dp[i][lastIncludedIdx + 1] = Math.max(included, excluded);
             }
         }
-         /*
-         * dp[0][0], which represents the maximum length of the decreasing subsequence
-         * starting from index 0 till the last index with no elements included before it
-         * (simulating the lastIncludedIdx = -1 condition in the top-down approach).
-         */
+
         return dp[0][0];
     }
 }
 
-//Aliter (space optimised)
+
+//Better implementation
 
 public class Solution {
     public static int LDS(int[] arr) {
+        int[][] dp = new int[arr.length + 1][arr.length + 1];
+
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[i]) {
+                    included = 1 + dp[i + 1][i + 1];
+                }
+
+                int excluded = dp[i + 1][lastIncludedIdx + 1];
+
+                dp[i][lastIncludedIdx + 1] = Math.max(included, excluded);
+            }
+        }
+
+        return dp[0][0];
+    }
+}
+
+
+//Optimal implementation
+
+public class Solution {
+    public static int LDS(int[] arr) {
+        // Since dp[index][*] depends only on dp[index + 1][*], we use two 1D arrays (currentRow and nextRow) instead of a full 2D dp table
         int[] currentRow = new int[arr.length + 1];
         int[] nextRow = new int[arr.length + 1];
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int include = 0;
-                if (lastIncludedIndex == -1 || arr[index] < arr[lastIncludedIndex]) {
-                    include = 1 + nextRow[index + 1];
+        for (int i = arr.length - 1; i >= 0; i--) {
+            for (int lastIncludedIdx = arr.length - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
+                int included = Integer.MIN_VALUE;
+
+                if (lastIncludedIdx == -1 || arr[lastIncludedIdx] > arr[i]) {
+                    included = 1 + nextRow[i + 1];
                 }
 
-                int exclude = nextRow[lastIncludedIndex + 1];
+                int excluded = nextRow[lastIncludedIdx + 1];
 
-                currentRow[lastIncludedIndex + 1] = Math.max(include, exclude);
+                currentRow[lastIncludedIdx + 1] = Math.max(included, excluded);
             }
+
             int[] temp = currentRow;
             currentRow = nextRow;
             nextRow = temp;
@@ -170,128 +192,105 @@ public class Solution {
     }
 }
 
-//Aliter (Further space optimised)
+
+//Aliter DP approach
 
 public class Solution {
     public static int LDS(int[] arr) {
-        int[] dp = new int[arr.length + 1];
-
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int include = 0;
-                if (lastIncludedIndex == -1 || arr[index] < arr[lastIncludedIndex]) {
-                    include = 1 + dp[index + 1];
-                }
-
-                int exclude = dp[lastIncludedIndex + 1];
-
-                dp[lastIncludedIndex + 1] = Math.max(include, exclude);
-            }
-        }
-
-        return dp[0];
-    }
-}
-
-//Alternate DP approach
-
-public class Solution {
-    public static int LDS(int[] arr) {
-        // dp[i] = length of longest decreasing subsequence ending at index i
+        // dp[i] = max length LDS ending at index i
         int[] dp = new int[arr.length];
-        int overallMaxLengthLDS = 0;
+        int maxLengthLIS = 0;
 
         for (int i = 0; i < arr.length; i++) {
-            int maxLDSLengthEndingBeforeI = 0;
+            int prevBestLIS = 0;
             for (int j = 0; j < i; j++) {
                 if (arr[i] < arr[j]) {
-                    maxLDSLengthEndingBeforeI = Math.max(maxLDSLengthEndingBeforeI, dp[j]);
+                    prevBestLIS = Math.max(prevBestLIS, dp[j]);
                 }
             }
-            dp[i] = maxLDSLengthEndingBeforeI + 1;
+            dp[i] = prevBestLIS + 1;
+            maxLengthLIS = Math.max(maxLengthLIS, dp[i]);
         }
 
-        for (int i = 0; i < arr.length; i++) {
-            overallMaxLengthLDS = Math.max(overallMaxLengthLDS, dp[i]);
-        }
-
-        return overallMaxLengthLDS;
+        return maxLengthLIS;
     }
 }
 
 
-//Optimal Approach
+//Optimal approach
 
-public class Solution {
-    public static int LDS(int[] arr) {
-        List<Integer> tail = new ArrayList<>(arr.length);
-
-        for (int i=arr.length-1;i>=0;i--) {
-            int index = lowerBound(tail, arr[i]);
-
-            if (index == tail.size()) {
-                tail.add(arr[i]);
-            } else {
-                tail.set(index,  arr[i]);
-            }
-        }
-
-        return tail.size();
-    }
-
-    private static int lowerBound(List<Integer> arr, int x) {
-        int low = 0, high = arr.size() - 1, lowerBound = arr.size();
-
-        while (low <= high) {
-            int mid = low + (high - low) / 2;
-
-            if (arr.get(mid) >= x) {
-                lowerBound = mid;
-                high = mid - 1;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        return lowerBound;
-    }
-}
-
-
-//Aliter
-
+/*
+ *   arr = [13, 10, 11, 7, 8, 6, 5, 9, 2]
+ *
+ *   Step-by-step tail evolution:
+ *     1) [13]
+ *     2) [13, 10]
+ *     3) [13, 11] // replace 10 with 11
+ *     4) [13, 11, 7] 
+ *     5) [13, 11, 8]  // replace 7 with 8
+ *     6) [13, 11, 8, 6] 
+ *     7) [13, 11, 8, 6, 5] 
+ *     8) [13, 11, 9, 6, 5]  //replace 8 with 9
+ *     9) [13, 11, 9, 6, 5, 2] 
+ *
+ *   Final tail = [13, 11, 9, 6, 5, 2], length = 6
+ *
+ *   But [13, 11, 9, 6, 5, 2] is NOT a valid subsequence of `arr`, because
+ *   9 (index 7) comes after 6 (index 5) in the original array.
+ *
+ * Reason for substitution:
+ *   We always replace with a greater value (when possible) even though
+ *   the current length of `tail` stays the same, because:
+ *     ? A greater tail value opens up more room for future numbers
+ *       to extend the subsequence.
+ *     ? The greater the value at position i, the higher the chance
+ *       that a later array element < tail[i], letting us grow length.
+ *
+ *
+ * Mini example: arr = [1, 10, 8]
+ *
+ *   1) Process 1  => tail = [1]
+ *
+ *   2) Process 10 => replace 1 with 10 => tail = [10] (length still 1)
+ *
+ *   3) Process 8  => append 8 => tail = [10, 8] (length increases to 2)
+ *
+ *   Here, substituting 1 with 10 didnot change the length,
+ *   but enabled appending 8 later to form a longer strictly decreasing subsequence.
+ */
 public class Solution {
     public static int LDS(int[] arr) {
         int[] tail = new int[arr.length];
         int length = 0;
 
-        for (int i = arr.length - 1; i >= 0; i--) {
-            int index = lowerBound(tail, length, arr[i]);
+        for (int num : arr) {
+            int index = findFirstLessOrEqual(tail, length, num);
 
             if (index == length) {
                 length++;
             }
 
-            tail[index] = arr[i];
+            tail[index] = num;
         }
 
         return length;
     }
 
-    private static int lowerBound(int[] arr, int n, int x) {
-        int low = 0, high = n - 1, lowerBound = n;
+    //Find the index of greatest element that is smaller than or equal to the target
+    private static int findFirstLessOrEqual(int[] arr, int n, int target) {
+        int low = 0, high = n - 1, upperBound = n;
 
         while (low <= high) {
             int mid = low + (high - low) / 2;
 
-            if (arr[mid] >= x) {
-                lowerBound = mid;
+            if (arr[mid] <= target) {
+                upperBound = mid;
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
         }
 
-        return lowerBound;
+        return upperBound;
     }
 }
