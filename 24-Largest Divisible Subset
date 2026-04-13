@@ -1,29 +1,29 @@
 //Bruteforce approach
 
 class Solution {
-    // Track the maximum length of a divisible subset found
-    private int maxSubsetLength;
     // Store the elements of the largest divisible subset found
-    private List<Integer> largestDivisibleSubset;
+    private List<Integer> bestSubset;
 
     public List<Integer> largestDivisibleSubset(int[] arr) {
-        maxSubsetLength = 0;
         generateLargestDivisibleSubset(arr, 0, new ArrayList<>());
-        return largestDivisibleSubset;
+        return bestSubset;
     }
 
     private void generateLargestDivisibleSubset(int[] arr, int index, List<Integer> currentSubset) {
+        // Base case: all elements processed
         if (index == arr.length) {
-            if (currentSubset.size() > maxSubsetLength && isDivisibleSubset(currentSubset)) {
-                largestDivisibleSubset = new ArrayList<>(currentSubset);
-                maxSubsetLength = currentSubset.size();
+            if (isDivisibleSubset(currentSubset) && (bestSubset == null || currentSubset.size() > bestSubset.size())) {
+                bestSubset = new ArrayList<>(currentSubset);
             }
             return;
         }
 
+        //Include the current element
         currentSubset.add(arr[index]);
         generateLargestDivisibleSubset(arr, index + 1, currentSubset);
+        // Backtrack (remove last element)
         currentSubset.remove(currentSubset.size() - 1);
+        //Exclude the current element
         generateLargestDivisibleSubset(arr, index + 1, currentSubset);
     }
 
@@ -46,6 +46,9 @@ class Solution {
 }
 
 
+
+//Better Approach
+
 /*
 Sorting plays a crucial role in ensuring that divisibility is maintained among elements of any particular subset:
 
@@ -61,109 +64,142 @@ Example:
 Note: A subset doesn't necessarily need to maintain the original order of appearance from the input array.
       Any subset can be arranged in multiple configurations; however, one such configuration will form a subsequence.
       Therefore, the problem can be thought of as finding the longest divisible subsequence.
-      
-For example:
-    arr: {1, 2, 3}
-    
-    Subsets:
-        - {1}
-        - {2}
-        - {3}
-        - {1, 2} or {2, 1} 
-          (here, {1, 2} is both a subset and a subsequence, while {2, 1} is just a subset)
-        - {1, 3} or {3, 1} 
-          (here, {1, 3} is both a subset and a subsequence, while {3, 1} is just a subset)
-        - {1, 2, 3}, {2, 1, 3}, {3, 1, 2}, {1, 3, 2}, {2, 3, 1}, {3, 2, 1}
-          (only {1, 2, 3} is both a subset and a subsequence, while the rest are only subsets)
           
 This means we are effectively searching for the longest divisible subsequence of elements in the sorted array.
 */
 
-//Better Approach
-
 class Solution {
-    int maxSubsetLength;
-    private List<Integer> largestDivisibleSubset;
+    private List<Integer> bestSubset;
 
     public List<Integer> largestDivisibleSubset(int[] arr) {
-        maxSubsetLength = 0;
         Arrays.sort(arr);
         generateLargestDivisibleSubset(arr, 0, -1, new ArrayList<>());
-        return largestDivisibleSubset;
+        return bestSubset;
     }
 
     private void generateLargestDivisibleSubset(int[] arr, int index, int lastIncludedIndex, List<Integer> currentSubset) {
         if (index == arr.length) {
-            if (currentSubset.size() > maxSubsetLength) {
-                maxSubsetLength = currentSubset.size();
-                largestDivisibleSubset = new ArrayList<>(currentSubset);
+            if (bestSubset == null || currentSubset.size() > bestSubset.size()) {
+                bestSubset = new ArrayList<>(currentSubset);
             }
             return;
         }
 
         /*
-         * Include arr[index] in the subset if it's divisible by the last included element.
-         * lastIncludedIndex == -1 condition allows us to add the first element without any divisibility check.
-         */
-        if (lastIncludedIndex == -1 || (arr[index] % arr[lastIncludedIndex]) == 0) {
+        * Include arr[index] in the subset if it's divisible by the last included element.
+        * lastIncludedIndex == -1 condition allows us to add the first element without any divisibility check.
+        */
+        if (lastIncludedIndex == -1 || arr[index] % arr[lastIncludedIndex] == 0) {
             currentSubset.add(arr[index]);
             generateLargestDivisibleSubset(arr, index + 1, index, currentSubset);
             currentSubset.remove(currentSubset.size() - 1);
         }
+
         // Exclude arr[index] and move to the next element.
         generateLargestDivisibleSubset(arr, index + 1, lastIncludedIndex, currentSubset);
     }
 }
 
 
+
 //Optimal Approach
 
-class Solution {
-    private List<Integer> longestDivisibleSubset;
+/*
+   The following approach is used to find the Longest Divisible Subsequence (LDS) 
+   in an array by computing the LDS ending at each index:
 
+   Approach:
+
+   1. Subsequence Ending at Each Index:
+      Every divisible subsequence in the array must end at some index `i`. 
+      Therefore, we focus on calculating the length of the LDS that ends at each index `i`.
+      Once we determine the LDS length for each ending index, the overall longest divisible 
+      subsequence in the array will be the maximum among these values.
+
+   2. Finding Potential LDS Candidates:
+      For each element `arr[i]`, we examine all previous elements `arr[j]` (where `j < i`).
+      If `arr[i]` is divisible by `arr[j]`, then `arr[i]` can extend the divisible subsequence 
+      that ends at `arr[j]`.
+
+   3. Updating the LDS Length for Each Index `i`:
+      - For each valid candidate `arr[j]`, we retrieve the LDS ending at `j` (stored in `dp[j]`).
+      - Among all such candidates, the longest divisible subsequence ending at `j` provides 
+        the maximum length that `arr[i]` can extend.
+      - We then add 1 to this length to include the current element `arr[i]`, giving us 
+        the LDS length ending at `i`.
+
+   4. Final Step:
+      After computing the LDS for each index, the overall longest divisible subsequence 
+      in the array is the maximum value in the `dp` array.
+*/
+class Solution {
     public List<Integer> largestDivisibleSubset(int[] arr) {
         Arrays.sort(arr);
-        int[][] dp = new int[arr.length + 1][arr.length + 1];
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            for (int lastIncludedIdx = index - 1; lastIncludedIdx >= -1; lastIncludedIdx--) {
-                int include = 0;
-                if (lastIncludedIdx == -1 || (arr[index] % arr[lastIncludedIdx]) == 0) {
-                    include = 1 + dp[index + 1][index + 1];
+        int maxLengthLDS = 0;
+        int ldsEndIndex = 0; // 'ldsEndIndex' points to the last element of the LIS (i.e., where LIS ends)
+
+        // dp[i] → Length of the longest divisible subsequence ending at index i
+        int[] dp = new int[arr.length];
+        /*
+        prevIndex[i] → Stores the index of the previous element in the LDS 
+        ending at index i (i.e., the element chosen just before arr[i] in that subsequence)  
+        */
+        int[] prevIndex = new int[arr.length];
+
+        for (int i = 0; i < arr.length; i++) {
+            int bestPrevLDSLength = 0;
+            int bestPrevLDSIdx = -1;
+
+            for (int j = 0; j < i; j++) {
+                if (arr[i] % arr[j] == 0 && dp[j] > bestPrevLDSLength) {
+                    bestPrevLDSLength = dp[j];
+                    bestPrevLDSIdx = j;
                 }
-                int exclude = dp[index + 1][lastIncludedIdx + 1];
-                dp[index][lastIncludedIdx + 1] = Math.max(include, exclude);
+            }
+
+            dp[i] = bestPrevLDSLength + 1;
+            prevIndex[i] = bestPrevLDSIdx;
+
+            if (dp[i] > maxLengthLDS) {
+                maxLengthLDS = dp[i];
+                ldsEndIndex = i;
             }
         }
 
-        ArrayList<Integer> longestDivisibleSubsequence = new ArrayList<>();
-        int lastIncludedIdx = -1;
-        // dp[0][0] stores the length of the longest divisible subsequence (LDS)
-        int currentLDSLength = dp[0][0]; // Target length of the LDS sequence to stop at
+        List<Integer> lds = new ArrayList<>();
 
-        for (int index = 0; index < arr.length; index++) {
-            int include = 0;
-            if (lastIncludedIdx == -1 || (arr[index] % arr[lastIncludedIdx]) == 0) {
-                include = 1 + dp[index + 1][index + 1];
-            }
-            int exclude = dp[index + 1][lastIncludedIdx + 1];
+        /*
+        * We backtrack the LDS (largest divisible subset) in reverse using the parent pointers:
+        *
+        * previousIndex[i] tells us:
+        * "which element came just before arr[i] in the LDS"
+        *
+        * So we keep moving:
+        * current index → its previous index → its previous → ...
+        * until we reach -1 (start of subsequence)
+        */
+        int idx = ldsEndIndex;
 
-            /*
-             * The value dp[index][lastIncludedIdx + 1] stores the maximum possible length
-             * of the LDS starting from index `index`. We can use this value to decide
-             * whether to include the current element in our result. If including the element
-             * contributes to forming the LDS, we add it to the result; otherwise, we skip it.
-             */
-            if (include >= exclude) {
-                longestDivisibleSubsequence.add(arr[index]);
-                lastIncludedIdx = index;
-                currentLDSLength--; // Reduce the target LDS length by 1
-                if (currentLDSLength == 0) {
-                    break; // Stop once we've collected the full LDS
-                }
-            }
+        while (prevIndex[idx] != -1) {
+            lds.add(arr[idx]);
+            idx = prevIndex[idx];
         }
 
-        return longestDivisibleSubsequence;
+        /*
+        * At this point, 'idx' is the starting element of the LDS
+        * (its previousIndex is -1), so we add it as well.
+        */
+        lds.add(arr[idx]);
+
+        /*
+        * The elements were collected while backtracking from end → start of the LDS.
+        * Hence, the list is currently in reverse order.
+        *
+        * We reverse it to restore the correct sequence (start → end of LDS).
+        */
+        Collections.sort(lds);
+
+        return lds;
     }
 }
