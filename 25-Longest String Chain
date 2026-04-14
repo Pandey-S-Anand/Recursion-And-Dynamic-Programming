@@ -76,64 +76,91 @@ class Solution {
 }
 
 
-//Improved Approach
+
+//Good Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[index][lastIncludedIdx + 1] stores the maximum length of the longest string chain
+    * that can be formed starting from the given index,
+    * given the index of the last included word.
+    *
+    * Why (lastIncludedIdx + 1)?
+    * - lastIncludedIdx can be -1 (no word chosen yet)
+    * - Array indices cannot be negative
+    * - So we shift it by +1 to map:
+    *      -1 -> 0
+    *       0 -> 1
+    *       1 -> 2
+    *       ...
+    *
+    * Meaning of values:
+    * - null  -> this state has NOT been computed yet
+    * - value -> maximum chain length for this state
+    *
+    * State definition:
+    * - index             -> current index in the array
+    * - lastIncludedIdx   -> index of the last word included in the chain
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp to avoid recomputation
+    * of overlapping subproblems.
+    */
+    private Integer[][] dp;
 
-    public int longestStrChain(String[] arr) {
-        cache = new int[arr.length][arr.length];
-        intializeCache();
-        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
-        return longestStrChain(arr, 0, -1);
+    public int longestStrChain(String[] words) {
+        dp = new Integer[words.length][words.length + 1];
+        Arrays.sort(words, (word1, word2) -> {
+            return Integer.compare(word1.length(), word2.length());
+        });
+
+        return longestStrChain(words, 0, -1);
     }
 
-    private int longestStrChain(String[] arr, int index, int lastIncludedIndex) {
-        if (index == arr.length) {
+    private int longestStrChain(String[] words, int index, int lastIncludedIndex) {
+        if (index == words.length) {
             return 0;
         }
 
-        if (cache[index][lastIncludedIndex + 1] != -1) {
-            return cache[index][lastIncludedIndex + 1];
+        if (dp[index][lastIncludedIndex + 1] != null) {
+            return dp[index][lastIncludedIndex + 1];
         }
 
         int include = 0;
-        if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
-            include = 1 + longestStrChain(arr, index + 1, index);
+
+        if (lastIncludedIndex == -1 || isValidChain(words[lastIncludedIndex], words[index])) {
+            include = 1 + longestStrChain(words, index + 1, index);
         }
 
-        int exclude = longestStrChain(arr, index + 1, lastIncludedIndex);
+        int exclude = longestStrChain(words, index + 1, lastIncludedIndex);
 
-        return cache[index][lastIncludedIndex + 1] = Math.max(include, exclude);
+        return dp[index][lastIncludedIndex + 1] = Math.max(include, exclude);
     }
 
-    private boolean isValidChain(String previousWord, String nextWord) {
-        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+    private boolean isValidChain(String prevWord, String currentWord) {
+        if (currentWord.length() - prevWord.length() == 1 && isSubsequence(prevWord, currentWord)) {
             return true;
         }
+
         return false;
     }
 
-    private boolean isSubsequence(String str1, String str2) {
+    private boolean isSubsequence(String prevWord, String currentWord) {
         int i = 0, j = 0;
-        while (i < str1.length() && j < str2.length()) {
-            if (str1.charAt(i) == str2.charAt(j)) {
+
+        while (i < prevWord.length() && j < currentWord.length()) {
+            if (prevWord.length() - i > currentWord.length() - j) {
+                return false;
+            }
+
+            if (prevWord.charAt(i) == currentWord.charAt(j)) {
                 i++;
             }
             j++;
-
-            if (str1.length() - i > str2.length() - j) {
-               return false;
-            }
         }
 
-        return i == str1.length();
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return i == prevWord.length();
     }
 }
 
