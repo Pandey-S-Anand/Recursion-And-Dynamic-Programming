@@ -1,77 +1,77 @@
-/* 
-The key idea in solving the longest string chain problem is that each subsequent word in the 
-chain must contain the previous word as a subsequence and be exactly one character longer. 
-To guarantee that we process words in increasing order of length, we first sort the array. 
-This sorting step is fundamental to the approach.
-*/
-
 //Bruteforce approach
 
 class Solution {
-    public int longestStrChain(String[] arr) {
-        /*
-         * The default behavior of Arrays.sort() sorts strings lexicographically (alphabetically).
-         * However, in this case, we are sorting the array of words based on their lengths.
-         * The comparator compares the length of two strings (str1.length() - str2.length()) 
-         * to sort them in ascending order of length.
-         */
-        Arrays.sort(arr, (str1, str2) -> str1.length() - str2.length());
-        return longestStrChain(arr, 0, -1);
+    /*
+      The key idea behind solving the Longest String Chain problem is that each subsequent word 
+      in the chain must be exactly one character longer and should contain the previous word 
+      as a subsequence.
+    
+      To ensure this order, we first sort the array based on word length. 
+      This guarantees that shorter words are processed before longer ones, and words with 
+      similar lengths are grouped together.
+    */
+    public int longestStrChain(String[] words) {
+        Arrays.sort(words, (word1, word2) -> {
+            return Integer.compare(word1.length(), word2.length());
+        });
+
+        return longestStrChain(words, 0, -1);
     }
 
-    private int longestStrChain(String[] arr, int index, int lastIncludedIndex) {
-        if (index == arr.length) {
+    private int longestStrChain(String[] words, int index, int lastIncludedIndex) {
+        if (index == words.length) {
             return 0;
         }
-        /*
-         * If lastIncludedIndex is -1 (meaning no word has been included yet), it
-         * indicates that we can start a chain with any word from the array.
-         * Alternatively, if the current word can form a valid chain with the word at
-         * lastIncludedIndex (i.e., the previous word in the chain), we consider
-         * including the current word in the chain.
-         */
 
         int include = 0;
-        if (lastIncludedIndex == -1 || isValidChain(arr[lastIncludedIndex], arr[index])) {
-            include = 1 + longestStrChain(arr, index + 1, index);
+        /*
+        * If lastIncludedIndex is -1 (meaning no word has been included yet), it
+        * indicates that we can start a chain with any word from the array.
+        * Alternatively, if the current word can form a valid chain with the word at
+        * lastIncludedIndex (i.e., the previous word in the chain), we consider
+        * including the current word in the chain.
+        */
+        if (lastIncludedIndex == -1 || isValidChain(words[lastIncludedIndex], words[index])) {
+            include = 1 + longestStrChain(words, index + 1, index);
         }
 
         // Exclude the current word and move on to the next word
-        int exclude = longestStrChain(arr, index + 1, lastIncludedIndex);
+        int exclude = longestStrChain(words, index + 1, lastIncludedIndex);
 
         // Return the maximum length from including or excluding the current word
         return Math.max(include, exclude);
     }
 
-    private boolean isValidChain(String previousWord, String nextWord) {
+    private boolean isValidChain(String prevWord, String currentWord) {
         /*
-         * Valid chain condition: The length of the next word in the chain must be
-         * exactly 1 greater than the length of the previous word, and the previous word
-         * must be a
-         * subsequence of the next word.
-         */
-
-        if ((nextWord.length() - previousWord.length()) == 1 && isSubsequence(previousWord, nextWord)) {
+        * Valid chain condition: The length of the next word in the chain must be
+        * exactly 1 greater than the length of the previous word, and the previous word
+        * must be a subsequence of the next word.
+        */
+        if (currentWord.length() - prevWord.length() == 1 && isSubsequence(prevWord, currentWord)) {
             return true;
         }
+
         return false;
     }
 
-    private boolean isSubsequence(String str1, String str2) {
+    private boolean isSubsequence(String prevWord, String currentWord) {
         int i = 0, j = 0;
-        while (i < str1.length() && j < str2.length()) {
-            if (str1.charAt(i) == str2.charAt(j)) {
+
+        while (i < prevWord.length() && j < currentWord.length()) {
+            // Early exit: if remaining characters in prevWord exceed remaining in currentWord
+            if (prevWord.length() - i > currentWord.length() - j) {
+                return false;
+            }
+
+            if (prevWord.charAt(i) == currentWord.charAt(j)) {
                 i++;
             }
             j++;
-
-            // Early exit: if remaining characters in str1 exceed remaining in str2
-            if (str1.length() - i > str2.length() - j) {
-               return false;
-            }
         }
-        // If we've traversed all characters in str1, it means it's a subsequence of str2
-        return i == str1.length();
+
+        // If we've traversed all characters in prevWord, it means it's a subsequence of currentWord
+        return i == prevWord.length();
     }
 }
 
