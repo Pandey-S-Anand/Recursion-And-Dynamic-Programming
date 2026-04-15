@@ -1,29 +1,28 @@
 /*
-The question allows us to pick pairs in any order. However, without a clear structure, 
-choosing pairs to form the longest chain would require constant back-and-forth searching 
-to verify the chain condition (i.e., checking that the end of one pair is less than the 
-start of the next).
+ * Why do we sort pairs by their end value?
+ *
+ * Sorting by end ensures that we always consider the pair that finishes earliest first.
+ * This is important because choosing a pair with a smaller end leaves more room
+ * for subsequent pairs to be included in the chain.
+ *
+ * If we pick a pair that ends later, it may block multiple valid pairs that could
+ * have formed a longer chain.
+ *
+ * By processing pairs in increasing order of their end values, we make a greedy choice:
+ * at each step, select the next pair that starts after the last selected pair ends.
+ *
+ * This guarantees that we maximize the number of pairs in the chain.
+ */
 
-Without sorting the pairs, building a chain requires us to look back at previous pairs 
-for each new pair to find valid connections. This would involve checking each new pair 
-against potentially all earlier pairs, adding considerable complexity.
-
-When pairs are sorted by their end values, they are naturally arranged so that we only 
-need to look forward to build the longest chain. For any pair at index i, we only need 
-to check if it can follow the last included pair in the chain (tracked by lastIncludedIndex). 
-If it can, we add it to the chain, and if it can’t, we move to the next pair.
-
-Example:
-Given pairs: [[6,8], [1,2], [2,3], [3,4], [10,16]]
-After sorting by end values, the longest pair chain would be: [1, 2] -> [3, 4] -> [6, 8] -> [10,16]
-*/
-
-//Bruteforce Approach
+//Bruteforce approach
 
 class Solution {
     public int findLongestChain(int[][] pairs) {
         // Sort pairs by the end value (second element) of each pair in ascending order.
-        Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
+        Arrays.sort(pairs, (pair1, pair2) -> {
+            return Integer.compare(pair1[1], pair2[1]);
+        });
+
         return findLongestChain(pairs, 0, -1);
     }
 
@@ -52,15 +51,46 @@ class Solution {
 }
 
 
-//Improved Approach
+
+//Better Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[index][lastIncludedIndex + 1] stores the maximum length of chain
+    * that can be formed starting from the current index,
+    * given the last included pair's index.
+    *
+    * Why (lastIncludedIndex + 1)?
+    * - lastIncludedIndex can be -1 (no pair chosen yet)
+    * - Array indices cannot be negative
+    * - So we shift it by +1 to map:
+    *     -1 → 0
+    *      0 → 1
+    *      1 → 2
+    *      ...
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → maximum chain length for this state
+    *
+    * State definition:
+    * - index → current index in the pairs array
+    * - lastIncludedIndex → index of the last pair included in the chain
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute the result and store it in dp
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
 
     public int findLongestChain(int[][] pairs) {
-        cache = new int[pairs.length][pairs.length + 1];
-        intializeCache();
-        Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
+        dp = new Integer[pairs.length][pairs.length];
+
+        Arrays.sort(pairs, (pair1, pair2) -> {
+            return Integer.compare(pair1[1], pair2[1]);
+        });
+
         return findLongestChain(pairs, 0, -1);
     }
 
@@ -69,8 +99,8 @@ class Solution {
             return 0;
         }
 
-        if (cache[index][lastIncludedIndex + 1] != -1) {
-            return cache[index][lastIncludedIndex + 1];
+        if (dp[index][lastIncludedIndex + 1] != null) {
+            return dp[index][lastIncludedIndex + 1];
         }
 
         int include = 0;
@@ -81,34 +111,49 @@ class Solution {
 
         int exclude = findLongestChain(pairs, index + 1, lastIncludedIndex);
 
-        return cache[index][lastIncludedIndex + 1] = Math.max(include, exclude);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[index][lastIncludedIndex + 1] = Math.max(include, exclude);
     }
 }
 
+
 //Better Approach
+
+//Naive implementation
 
 class Solution {
     public int findLongestChain(int[][] pairs) {
-        Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
-
+        /*
+        * dp[index][lastIncludedIndex + 1] represents:
+        * "Maximum length of chain that can be formed starting from index 'index',
+        * given the last included pair's index."
+        *
+        * Why (lastIncludedIndex + 1)?
+        * - lastIncludedIndex can be -1 (no pair chosen yet)
+        * - Array indices cannot be negative
+        * - So we shift it by +1:
+        *     -1 → 0, 0 → 1, 1 → 2, ...
+        */
         int[][] dp = new int[pairs.length + 1][pairs.length + 1];
 
-        for (int index = pairs.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int included = 0;
-                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[index][0]) {
-                    included = 1 + dp[index + 1][index + 1];
+        Arrays.sort(pairs, (pair1, pair2) -> {
+            return Integer.compare(pair1[1], pair2[1]);
+        });
+
+        for (int lastIncludedIndex = -1; lastIncludedIndex < pairs.length; lastIncludedIndex++) {
+            dp[pairs.length][lastIncludedIndex + 1] = 0;
+        }
+
+        for (int i = pairs.length - 1; i >= 0; i--) {
+            for (int lastIncludedIndex = pairs.length - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+
+                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[i][0]) {
+                    include = 1 + dp[i + 1][i + 1];
                 }
 
-                int excluded = dp[index + 1][lastIncludedIndex + 1];
+                int exclude = dp[i + 1][lastIncludedIndex + 1];
 
-                dp[index][lastIncludedIndex + 1] = Math.max(included, excluded);
+                dp[i][lastIncludedIndex + 1] = Math.max(include, exclude);
             }
         }
 
@@ -116,27 +161,59 @@ class Solution {
     }
 }
 
-//Aliter (space optimised)
+
+//Better implementation
 
 class Solution {
     public int findLongestChain(int[][] pairs) {
-        Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
+        int[][] dp = new int[pairs.length + 1][pairs.length + 1];
 
-        int[] nextRow = new int[pairs.length + 1];
-        int[] currentRow = new int[pairs.length + 1];
+        Arrays.sort(pairs, (pair1, pair2) -> {
+            return Integer.compare(pair1[1], pair2[1]);
+        });
 
-        for (int index = pairs.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int included = 0;
-                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[index][0]) {
-                    included = 1 + nextRow[index + 1];
+        for (int i = pairs.length - 1; i >= 0; i--) {
+            for (int lastIncludedIndex = pairs.length - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+
+                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[i][0]) {
+                    include = 1 + dp[i + 1][i + 1];
                 }
 
-                int excluded = nextRow[lastIncludedIndex + 1];
+                int exclude = dp[i + 1][lastIncludedIndex + 1];
 
-                currentRow[lastIncludedIndex + 1] = Math.max(included, excluded);
+                dp[i][lastIncludedIndex + 1] = Math.max(include, exclude);
             }
+        }
 
+        return dp[0][0];
+    }
+}
+
+
+//Optimal implementation 
+
+class Solution {
+    public int findLongestChain(int[][] pairs) {
+        int[] currentRow = new int[pairs.length + 1];
+        int[] nextRow = new int[pairs.length + 1];
+
+        Arrays.sort(pairs, (pair1, pair2) -> {
+            return Integer.compare(pair1[1], pair2[1]);
+        });
+
+        for (int i = pairs.length - 1; i >= 0; i--) {
+            for (int lastIncludedIndex = pairs.length - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
+                int include = 0;
+
+                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[i][0]) {
+                    include = 1 + nextRow[i + 1];
+                }
+
+                int exclude = nextRow[lastIncludedIndex + 1];
+
+                currentRow[lastIncludedIndex + 1] = Math.max(include, exclude);
+            }
             int[] temp = currentRow;
             currentRow = nextRow;
             nextRow = temp;
@@ -147,31 +224,6 @@ class Solution {
 }
 
 
-//Aliter (Further space optimised)
-
-class Solution {
-    public int findLongestChain(int[][] pairs) {
-        Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
-
-        int[] dp = new int[pairs.length + 1];
-
-        for (int index = pairs.length - 1; index >= 0; index--) {
-            for (int lastIncludedIndex = index - 1; lastIncludedIndex >= -1; lastIncludedIndex--) {
-                int included = 0;
-                if (lastIncludedIndex == -1 || pairs[lastIncludedIndex][1] < pairs[index][0]) {
-                    included = 1 + dp[index + 1];
-                }
-
-                int excluded = dp[lastIncludedIndex + 1];
-
-                dp[lastIncludedIndex + 1] = Math.max(included, excluded);
-            }
-        }
-
-        return dp[0];
-    }
-}
-
 //Optimal Approach
 
 /*
@@ -179,7 +231,6 @@ We use a greedy approach here because sorting pairs by their end values lets us 
 the longest chain by always selecting the earliest finishing pair that can follow the last included pair. 
 This strategy maximizes the chain length while ensuring each added pair leaves space for future pairs.
 */
-
 class Solution {
     public int findLongestChain(int[][] pairs) {
         Arrays.sort(pairs, (pair1, pair2) -> Integer.compare(pair1[1], pair2[1]));
