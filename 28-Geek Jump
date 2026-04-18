@@ -101,6 +101,8 @@ class Solution {
 
 //Optimal Approach
 
+//Naive implementation
+
 class Solution {
     int minCost(int[] height) {
         // dp[i] represents the minimum energy consumed to reach last stair (height.length - 1) from i th stair
@@ -121,6 +123,32 @@ class Solution {
             if (stair + 2 <= height.length - 1) {
                 costFromNextNextStair = Math.abs(height[stair + 2] - height[stair]) + dp[stair + 2];
             }
+
+            dp[stair] = Math.min(costFromNextStair, costFromNextNextStair);
+        }
+
+        return dp[0];
+    }
+}
+
+
+//Optimal implementation
+
+class Solution {
+    int minCost(int[] height) {
+        // Edge case: If there is only one stair, no jumps are needed → energy = 0.
+        if (height.length == 1) {
+            return 0;
+        }
+
+        int[] dp = new int[height.length];
+        // From the second last stair, there is only one possible move → a 1-step jump to the last stair, so the cost is |height[last] - height[last - 1]|.
+        dp[height.length - 2] = Math.abs(height[height.length - 1] - height[height.length - 2]);
+
+        for (int stair = height.length - 3; stair >= 0; stair--) {
+            int costFromNextStair = Math.abs(height[stair + 1] - height[stair]) + dp[stair + 1];
+
+            int costFromNextNextStair = Math.abs(height[stair + 2] - height[stair]) + dp[stair + 2];
 
             dp[stair] = Math.min(costFromNextStair, costFromNextNextStair);
         }
