@@ -10,12 +10,12 @@ class Solution {
         if (index >= arr.length) {
             return 0;
         }
-        
+
         // Option 1: Rob the current house (arr[index]) and move to the next house that can be robbed, i.e., index + 2
         int rob = arr[index] + rob(arr, index + 2);
         // Option 2: Skip the current house and move to the next house, i.e., index + 1
         int notRob = rob(arr, index + 1);
-        
+
         // Return the maximum of robbing the current house or skipping it
         return Math.max(rob, notRob);
     }
@@ -25,11 +25,23 @@ class Solution {
 //Better Approach
 
 class Solution {
-    private int[] cache;
+    /*
+    * Memoization:
+    * dp[index] stores the maximum amount of money that can be robbed
+    * starting from the current house (index).
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → maximum money that can be robbed starting from this index
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[index]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[] dp;
 
     public int rob(int[] arr) {
-        cache = new int[arr.length];
-        Arrays.fill(cache, -1);
+        dp = new Integer[arr.length];
         return rob(arr, 0);
     }
 
@@ -38,36 +50,33 @@ class Solution {
             return 0;
         }
 
-        if (cache[index] != -1) {
-            return cache[index];
+        if (dp[index] != null) {
+            return dp[index];
         }
 
         int rob = arr[index] + rob(arr, index + 2);
         int notRob = rob(arr, index + 1);
 
-        return cache[index] = Math.max(rob, notRob);
+        return dp[index] = Math.max(rob, notRob);
     }
 }
 
 
-//Optmal Approach
+//Optimal Approach
+
+//Naive Implementation
 
 class Solution {
     public int rob(int[] arr) {
-        // dp[i] represents the maximum money that can be robbed starting from house 'i' and considering all houses from 'i' to the end.
-        int[] dp = new int[arr.length];
+        //dp[i] stores the maximum money that can be robbed starting from index i.
+        int[] dp = new int[arr.length + 2];
+
+        // Base case: dp[arr.length] and dp[arr.length+1] represent positions beyond the last house,so no money can be robbed → both are initialized to 0.
+        dp[arr.length] = dp[arr.length + 1] = 0;
 
         for (int i = arr.length - 1; i >= 0; i--) {
-            int rob = arr[i];
-            if (i + 2 < arr.length) {
-                rob += dp[i + 2];
-            }
-
-            int notRob = 0;
-            if (i + 1 < arr.length) {
-                notRob = dp[i + 1];
-            }
-
+            int rob = arr[i] + dp[i + 2];
+            int notRob = dp[i + 1];
             dp[i] = Math.max(rob, notRob);
         }
 
@@ -75,21 +84,41 @@ class Solution {
     }
 }
 
-//Aliter (Space optimised)
+//Optimal implementation
 
 class Solution {
     public int rob(int[] arr) {
-        int next2 = 0, next1 = 0, current = 0;
+        /*
+        * Space Optimization:
+        *
+        * - In the tabulation approach, dp[i] depends only on:
+        *     → dp[i + 1] (next)
+        *     → dp[i + 2] (nextNext)
+        *
+        * - Since we only need the next two states at any time,
+        *   we can avoid maintaining the entire dp array.
+        *
+        * - Instead, we use two variables:
+        *     → nextProfit     = dp[i + 1]
+        *     → nextNextProfit = dp[i + 2]
+        *
+        * - After computing currentProfit (dp[i]):
+        *     → shift the variables forward:
+        *         nextNextProfit = nextProfit
+        *         nextProfit = currentProfit
+        */
+        int nextProfit = 0, nextNextProfit = 0;
 
         for (int i = arr.length - 1; i >= 0; i--) {
-            int rob = arr[i] + next2;
-            int notRob = next1;
+            int rob = arr[i] + nextNextProfit;
+            int notRob = nextProfit;
+            int currentProfit = Math.max(rob, notRob);
 
-            current = Math.max(rob, notRob);
-            next2 = next1;
-            next1 = current;
+            int temp = nextProfit;
+            nextProfit = currentProfit;
+            nextNextProfit = temp;
         }
 
-        return next1;
+        return nextProfit;
     }
 }
