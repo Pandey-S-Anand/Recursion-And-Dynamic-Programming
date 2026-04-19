@@ -2,30 +2,43 @@
 
 class Solution {
     public int jump(int[] arr) {
+        // Start from index 0 and compute minimum jumps to reach the end
         return jump(arr, 0);
     }
 
     private int jump(int[] arr, int index) {
-        // Base case: If we have reached the last index, no more jumps are needed
+        // Base case: If we are already at the last index, no jumps are needed
         if (index == arr.length - 1) {
             return 0;
         }
-        
-        // Get the maximum jump length from the current index  
-        int maxJump = arr[index];
-        int minJump = Integer.MAX_VALUE / 2;
-         
-        // Try all possible jump lengths from the current index
-        for (int jump = 1; jump <= maxJump; jump++) {
-            if (index + jump >= arr.length) {
-                break;
-            }
-            // Add 1 to include the current jump and take the minimum across all possible jumps
-            minJump = Math.min(minJump, 1 + jump(arr, index + jump));
+
+        // Invalid case: If index goes out of bounds, this path is not valid 
+        if (index >= arr.length) {
+            return Integer.MAX_VALUE;
         }
 
-        // Return the minimum number of jumps required to reach the last index
-        return minJump;
+        // Maximum jump length we can take from current index
+        int maxJumpSize = arr[index];
+
+        // Initialize minimum jumps as infinity (worst case)
+        int minJumps = Integer.MAX_VALUE;
+
+        // Try all possible jump sizes from 1 to maxJumpSize
+        for (int jumpSize = 1; jumpSize <= maxJumpSize; jumpSize++) {
+            // Recursively calculate jumps needed from the next position
+            int jumps = jump(arr, index + jumpSize);
+
+            // Take the minimum among all possible jump paths
+            minJumps = Math.min(minJumps, jumps);
+        }
+
+        // Since a valid path is guaranteed, minJumps will be updated; add 1 for the current jump.      
+        if (minJumps != Integer.MAX_VALUE) {
+            return 1 + minJumps;
+        }
+
+        // If no valid path exists, return Integer.MAX_VALUE (unreachable)
+        return minJumps;
     }
 }
 
@@ -33,11 +46,23 @@ class Solution {
 //Improved Approach
 
 class Solution {
-    private int[] cache;
+    /*
+    * Memoization:
+    * dp[index] stores the minimum number of jumps required to reach
+    * the last index starting from the given index.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → minimum jumps needed to reach the end from this index
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[index]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[] dp;
 
     public int jump(int[] arr) {
-        cache = new int[arr.length - 1];
-        Arrays.fill(cache, -1);
+        dp = new Integer[arr.length - 1];
         return jump(arr, 0);
     }
 
@@ -46,44 +71,56 @@ class Solution {
             return 0;
         }
 
-        if (cache[index] != -1) {
-            return cache[index];
+        if (index >= arr.length) {
+            return Integer.MAX_VALUE;
         }
 
-        int maxJump = arr[index];
-        int minJump = Integer.MAX_VALUE / 2;
-
-        for (int jump = 1; jump <= maxJump; jump++) {
-            if (index + jump >= arr.length) {
-                break;
-            }
-
-            minJump = Math.min(minJump, 1 + jump(arr, index + jump));
+        if (dp[index] != null) {
+            return dp[index];
         }
 
-        return cache[index] = minJump;
+        int maxJumpSize = arr[index];
+        int minJumps = Integer.MAX_VALUE;
+
+        for (int jumpSize = 1; jumpSize <= maxJumpSize; jumpSize++) {
+            int jumps = jump(arr, index + jumpSize);
+            minJumps = Math.min(minJumps, jumps);
+        }
+
+        if (minJumps != Integer.MAX_VALUE) {
+            return dp[index] = 1 + minJumps;
+        }
+
+        return dp[index] = minJumps;
     }
 }
+
 
 //Better Approach
 
 class Solution {
     public int jump(int[] arr) {
-        // dp[i] represents the minimum number of jumps required to reach the last index from index 'i'
         int[] dp = new int[arr.length];
+
+        // dp[i] represents the minimum number of jumps required to reach the last index from index 'i'
         dp[arr.length - 1] = 0;
 
-        for (int index = arr.length - 2; index >= 0; index--) {
-            int maxJump = arr[index];
-            int minJump = Integer.MAX_VALUE / 2;
+        for (int i = arr.length - 2; i >= 0; i--) {
+            int minJumps = Integer.MAX_VALUE;
 
-            for (int jump = 1; jump <= maxJump; jump++) {
-                if (index + jump >= arr.length) {
+            for (int jumpSize = 1; jumpSize <= arr[i]; jumpSize++) {
+                if ((i + jumpSize) >= arr.length) {
                     break;
                 }
-                minJump = Math.min(minJump, 1 + dp[index + jump]);
+                int jumps = dp[i + jumpSize];
+                minJumps = Math.min(minJumps, jumps);
             }
-            dp[index] = minJump;
+
+            if (minJumps != Integer.MAX_VALUE) {
+                dp[i] = 1 + minJumps;
+            } else {
+                dp[i] = Integer.MAX_VALUE;
+            }
         }
 
         return dp[0];
