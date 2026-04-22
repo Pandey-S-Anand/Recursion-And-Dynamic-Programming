@@ -131,26 +131,43 @@ class Solution {
 //Optimal Approach (Greedy Approach)
 
 class Solution {
+    /*
+     * Greedy:
+     *
+     * - windowEndIndex represents the end of the current jump range (window).
+     * - maxReachableIndex tracks the farthest index reachable from all indices
+     *   within the current window.
+     *
+     * Key Idea:
+     * - While iterating, we explore all possible jumps from indices within the current window
+     *   and keep updating maxReachableIndex.
+     *
+     * - When we reach the end of the current window (i == windowEndIndex):
+     *     → it means all positions reachable with the current number of jumps have been explored
+     *     → so we must take another jump to move forward
+     *
+     * - Each jump is defined by the range from the previous window’s end
+     *   (previous window maxReachableIndex) to the current window maxReachableIndex.
+     *
+     * - Since the problem guarantees that the last index is reachable,
+     *   this greedy approach yields the minimum number of jumps.
+     */
     public int jump(int[] arr) {
-        // Edge case: If the array has only one element, no jumps are needed.
         if (arr.length == 1) {
             return 0;
         }
 
         int maxReachableIndex = 0;
-        int windowEndIndex = 0; // Represents the end of the current jump range (window).
-        int minJump = 0;  // Keeps count of the minimum number of jumps.
+        int windowEndIndex = 0;
+        int minJump = 0;
 
         for (int i = 0; i < arr.length; i++) {
-            // Update the max index reachable from the current index.
             maxReachableIndex = Math.max(maxReachableIndex, i + arr[i]);
-            
-            // When we've reached the end of the current jump range (window), we need to increase the jump count and update the range.
+
             if (i == windowEndIndex) {
                 windowEndIndex = maxReachableIndex;
                 minJump++;
-                
-                //Early exit : if the last index is reached 
+
                 if (maxReachableIndex == arr.length - 1) {
                     break;
                 }
