@@ -2,40 +2,59 @@
 
 class Solution {
     public int minFallingPathSum(int[][] matrix) {
-        int m = matrix.length, n = matrix[0].length, minPathSum = Integer.MAX_VALUE;
+        // This will store the minimum path among all possible starting columns
+        int minPathSum = Integer.MAX_VALUE;
 
-        // Iterate through each column of the first row to start the falling path.
+        // Try starting from every column in the first row
         for (int col = 0; col < matrix.length; col++) {
-            // Calculate the minimum falling path sum starting from each element in the first row.
-            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col, m, n));
+            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col));
         }
 
+        /*
+         * Note:
+         * - The final answer will never be Integer.MAX_VALUE because:
+         *     → From any starting column, we can always move down row by row
+         *     → There is always at least one valid path to the last row
+         */
         return minPathSum;
     }
 
-    private int minFallingPathSum(int[][] matrix, int row, int col, int m, int n) {
-        // Base case: if we've reached the last row, return the value of the current cell.
-        if (row == m - 1) {
-            return matrix[row][col];
+    private int minFallingPathSum(int[][] mat, int row, int col) {
+        // Out of bounds → invalid path (ignore by returning MAX_VALUE)
+        if (row == mat.length || col == mat[0].length || col < 0) {
+            return Integer.MAX_VALUE;
         }
 
-        // Calculate the minimum falling path sum by moving straight down.
-        int straightDown = minFallingPathSum(matrix, row + 1, col, m, n);
-        
-        // Calculate the minimum falling path sum by moving diagonally left (if within bounds).
-        int diagonalLeft = Integer.MAX_VALUE;
-        if (col > 0) {
-            diagonalLeft = minFallingPathSum(matrix, row + 1, col - 1, m, n);
+        // Base case: reached last row → return value of current cell
+        if (row == mat.length - 1) {
+            return mat[row][col];
         }
-        
-        // Calculate the minimum falling path sum by moving diagonally right (if within bounds).
-        int diagonalRight = Integer.MAX_VALUE;
-        if (col < n - 1) {
-            diagonalRight = minFallingPathSum(matrix, row + 1, col + 1, m, n);
+
+        /*
+         * From current cell (row, col), we have 3 choices:
+         *   → move straight down      → (row + 1, col)
+         *   → move diagonally left    → (row + 1, col - 1)
+         *   → move diagonally right   → (row + 1, col + 1)
+         */
+        int straightDown = minFallingPathSum(mat, row + 1, col);
+        int diagonalLeft = minFallingPathSum(mat, row + 1, col - 1);
+        int diagonalRight = minFallingPathSum(mat, row + 1, col + 1);
+
+        // Choose the minimum among all possible next moves
+        int minNextPath = Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+
+        /*
+        * If at least one valid path exists:
+        *   → add current cell value to the best (minimum) path ahead
+        *
+        * If all paths are invalid (minNextPath == MAX_VALUE):
+        *   → return MAX_VALUE to indicate no valid path
+        */
+        if (minNextPath != Integer.MAX_VALUE) {
+            return mat[row][col] + minNextPath;
         }
-        
-        // Return the value of the current cell + the minimum of the three possible falling paths.
-        return matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+
+        return minNextPath;
     }
 }
 
@@ -43,81 +62,95 @@ class Solution {
 //Better Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[row][col] stores the minimum falling path sum starting from
+    * cell (row, col) down to the last row.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → minimum cost from (row, col) to the bottom
+    *
+    * Important:
+    * - dp is reset for each starting column because each starting point
+    *   represents an independent path exploration.
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[row][col]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
 
     public int minFallingPathSum(int[][] matrix) {
-        int m = matrix.length, n = matrix[0].length, minPathSum = Integer.MAX_VALUE;
-
-        cache = new int[m][n];
-        intializeCache();
+        int minPathSum = Integer.MAX_VALUE;
 
         for (int col = 0; col < matrix.length; col++) {
-            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col, m, n));
+            dp = new Integer[matrix.length][matrix[0].length];
+            minPathSum = Math.min(minPathSum, minFallingPathSum(matrix, 0, col));
         }
 
         return minPathSum;
     }
 
-    private int minFallingPathSum(int[][] matrix, int row, int col, int m, int n) {
-        if (row == m - 1) {
-            return matrix[row][col];
+    private int minFallingPathSum(int[][] mat, int row, int col) {
+        if (row == mat.length || col == mat[0].length || col < 0) {
+            return Integer.MAX_VALUE;
         }
 
-        if (cache[row][col] != -1) {
-            return cache[row][col];
+        if (row == mat.length - 1) {
+            return mat[row][col];
         }
 
-        int straightDown = minFallingPathSum(matrix, row + 1, col, m, n);
-
-        int diagonalLeft = Integer.MAX_VALUE;
-        if (col > 0) {
-            diagonalLeft = minFallingPathSum(matrix, row + 1, col - 1, m, n);
+        if (dp[row][col] != null) {
+            return dp[row][col];
         }
 
-        int diagonalRight = Integer.MAX_VALUE;
-        if (col < n - 1) {
-            diagonalRight = minFallingPathSum(matrix, row + 1, col + 1, m, n);
+        int straightDown = minFallingPathSum(mat, row + 1, col);
+        int diagonalLeft = minFallingPathSum(mat, row + 1, col - 1);
+        int diagonalRight = minFallingPathSum(mat, row + 1, col + 1);
+
+        int minNextPath = Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+
+        if (minNextPath != Integer.MAX_VALUE) {
+            return dp[row][col] = mat[row][col] + minNextPath;
         }
 
-        return cache[row][col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[row][col] = minNextPath;
     }
 }
 
 
 //Optimal Approach
 
+//Naive implementation
+
 class Solution {
     public int minFallingPathSum(int[][] matrix) {
-        int m = matrix.length, n = matrix[0].length;
+        int m = matrix.length;
+        int n = matrix[0].length;
 
-        //dp[row][col] represents the minimum falling path sum starting from cell (row, col) to the bottom of the matrix.
+        /* 
+         * dp[row][col] represents the minimum falling path sum starting from
+         * cell (row, col) down to the last row.
+         */
         int[][] dp = new int[m][n];
 
-        for (int col = 0; col < n; col++) {
+        for (int col = 0; col <= n - 1; col++) {
             dp[m - 1][col] = matrix[m - 1][col];
         }
 
         for (int row = m - 2; row >= 0; row--) {
             for (int col = n - 1; col >= 0; col--) {
                 int straightDown = dp[row + 1][col];
+                int diagonalLeft = col > 0 ? dp[row + 1][col - 1] : Integer.MAX_VALUE;
+                int diagonalRight = col < n - 1 ? dp[row + 1][col + 1] : Integer.MAX_VALUE;
 
-                int diagonalLeft = Integer.MAX_VALUE;
-                if (col > 0) {
-                    diagonalLeft = dp[row + 1][col - 1];
+                int minNextPath = Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+                dp[row][col] = minNextPath;
+
+                if (minNextPath != Integer.MAX_VALUE) {
+                    dp[row][col] += matrix[row][col];
                 }
-
-                int diagonalRight = Integer.MAX_VALUE;
-                if (col < n - 1) {
-                    diagonalRight = dp[row + 1][col + 1];
-                }
-
-                dp[row][col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
             }
         }
 
@@ -132,34 +165,49 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal implementation
 
 class Solution {
     public int minFallingPathSum(int[][] matrix) {
-        int m = matrix.length, n = matrix[0].length;
-
+        int m = matrix.length;
+        int n = matrix[0].length;
+        /*
+         * Space Optimization (from 2D → 1D):
+         *
+         * - In the 2D DP approach, dp[row][col] depends only on:
+         *     → dp[row + 1][col]       (straight down)
+         *     → dp[row + 1][col - 1]   (diagonal left)
+         *     → dp[row + 1][col + 1]   (diagonal right)
+         *
+         * - Since each state depends only on the next row,
+         *   we do not need to store the entire 2D dp array.
+         *
+         * - Instead, we use two 1D arrays:
+         *     → nextRow[col]    → represents dp[row + 1][col]
+         *     → currentRow[col] → represents dp[row][col]
+         *
+         * - This reduces space complexity from O(m * n) → O(n)
+         *   while preserving the same DP logic.
+         */
         int[] currentRow = new int[n];
         int[] nextRow = new int[n];
 
-        for (int col = 0; col < n; col++) {
+        for (int col = 0; col <= n - 1; col++) {
             nextRow[col] = matrix[m - 1][col];
         }
 
         for (int row = m - 2; row >= 0; row--) {
             for (int col = n - 1; col >= 0; col--) {
                 int straightDown = nextRow[col];
+                int diagonalLeft = col > 0 ? nextRow[col - 1] : Integer.MAX_VALUE;
+                int diagonalRight = col < n - 1 ? nextRow[col + 1] : Integer.MAX_VALUE;
 
-                int diagonalLeft = Integer.MAX_VALUE;
-                if (col > 0) {
-                    diagonalLeft = nextRow[col - 1];
+                int minNextPath = Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
+                currentRow[col] = minNextPath;
+
+                if (minNextPath != Integer.MAX_VALUE) {
+                    currentRow[col] += matrix[row][col];
                 }
-
-                int diagonalRight = Integer.MAX_VALUE;
-                if (col < n - 1) {
-                    diagonalRight = nextRow[col + 1];
-                }
-
-                currentRow[col] = matrix[row][col] + Math.min(straightDown, Math.min(diagonalLeft, diagonalRight));
             }
 
             int[] temp = currentRow;
