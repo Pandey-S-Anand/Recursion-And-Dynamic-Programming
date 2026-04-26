@@ -2,162 +2,190 @@
 
 class Solution {
     public int cherryPickup(int[][] grid) {
-        int m = grid.length, n = grid[0].length;
         // Start the recursion from the first row with Robot 1 at column 0 and Robot 2 at the last column.
-        return cherryPickup(grid, 0, 0, n - 1, m, n);
+        return cherryPickup(grid, 0, 0, grid[0].length - 1, grid.length, grid[0].length);
     }
 
-    public int cherryPickup(int[][] grid, int row, int col1, int col2, int m, int n) {
-        /*
-         * Base case: If we reach the last row, collect cherries from the current positions of both robots.
-         * If both robots are in the same cell, count the cherries only once.
-         * Otherwise, add cherries collected by both robots from their respective cells.
-         */
+    private int cherryPickup(int[][] grid, int row, int robot1Col, int robot2Col, int m, int n) {
+        //Base case: If we reach the last row, collect cherries from the current positions of both robots.
         if (row == m - 1) {
-            if (col1 == col2) {
-                // Both robots are in the same cell; count cherries only once.
-                return grid[row][col1];
-            }
             // Robots are in different cells; sum up cherries from both cells.
-            return grid[row][col1] + grid[row][col2];
+            if (robot1Col != robot2Col) {
+                return grid[row][robot1Col] + grid[row][robot2Col];
+            }
+
+            // Both robots are in the same cell; count cherries only once.
+            return grid[row][robot1Col];
         }
 
-        int maxCherryCount = Integer.MIN_VALUE;
+        int maxCherries = 0;
+        /*
+         * At each step, both robots move independently.
+         *
+         * - Robot1 can move to:
+         *     → col1 - 1 (left)
+         *     → col1     (down)
+         *     → col1 + 1 (right)
+         *
+         * - Robot2 can also move to:
+         *     → col2 - 1
+         *     → col2
+         *     → col2 + 1
+         *
+         * - Since both move independently, we combine their moves:
+         *
+         *   All 9 possible combinations:
+         *
+         *   1. (col1 - 1, col2 - 1)
+         *   2. (col1 - 1, col2)
+         *   3. (col1 - 1, col2 + 1)
+         *
+         *   4. (col1,     col2 - 1)
+         *   5. (col1,     col2)
+         *   6. (col1,     col2 + 1)
+         *
+         *   7. (col1 + 1, col2 - 1)
+         *   8. (col1 + 1, col2)
+         *   9. (col1 + 1, col2 + 1)
+         *
+         * - Each pair represents the next positions of (Robot1, Robot2).
+         *
+         * - We must explore all valid combinations (within bounds)
+         *   and choose the one that gives the maximum cherries.
+         */
+        for (int move1 = -1; move1 <= 1; move1++) {
+            for (int move2 = -1; move2 <= 1; move2++) {
+                int nextRobot1Col = robot1Col + move1;
+                int nextRobot2Col = robot2Col + move2;
 
-        for (int moveRobot1 = -1; moveRobot1 <= 1; moveRobot1++) {
-            for (int moveRobot2 = -1; moveRobot2 <= 1; moveRobot2++) {
-                int robot1NextCol = col1 + moveRobot1;
-                int robot2NextCol = col2 + moveRobot2;
-                int maxCherriesFromPath = 0;
-                
                 // Ensure that the next path is within the grid bounds.
-                if (robot1NextCol >= 0 && robot1NextCol < n && robot2NextCol >= 0 && robot2NextCol < n) {
+                if (nextRobot1Col >= 0 && nextRobot1Col < n && nextRobot2Col >= 0 && nextRobot2Col < n) {
                     // Recursively calculate the maximum cherries collected starting from the next row considering all possible moves for both robots.
-                    maxCherriesFromPath = cherryPickup(grid, row + 1, robot1NextCol, robot2NextCol, m, n);
-                    
-                    // Add cherries collected by Robot 1.
-                    maxCherriesFromPath += grid[row][col1];
-
-                    // Add cherries collected by Robot 2 only if the robots are in different cells.
-                    if (col1 != col2) {
-                        maxCherriesFromPath += grid[row][col2];
-                    }
+                    int maxCherriesFromFuture = cherryPickup(grid, row + 1, nextRobot1Col, nextRobot2Col, m, n);
+                    /*
+                    * Total cherries collected at this step:
+                    *
+                    * - Add cherries collected by Robot1 from its current cell.
+                    *
+                    * - Add cherries collected by Robot2 ONLY if both robots
+                    *   are on different cells (to avoid double counting).
+                    *
+                    * - Add the maximum cherries that can be collected
+                    *   from future rows (computed recursively).
+                    */
+                    int totalCherries = grid[row][robot1Col] + (robot1Col != robot2Col ? grid[row][robot2Col] : 0) + maxCherriesFromFuture;
                     // Update the maximum cherries collected.
-                    maxCherryCount = Math.max(maxCherryCount, maxCherriesFromPath);
+                    maxCherries = Math.max(maxCherries, totalCherries);
                 }
             }
         }
 
-        return maxCherryCount;
+        return maxCherries;
     }
 }
-
 
 
 //Better Approach
 
 class Solution {
-    private int[][][] cache;
+    /*
+    * Memoization:
+    * dp[row][robot1Col][robot2Col] stores the maximum cherries that can be collected
+    * starting from the given state where:
+    *     → row = current row
+    *     → robot1Col = column of Robot1
+    *     → robot2Col = column of Robot2
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → maximum cherries collectible from this state to the last row
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[row][robot1Col][robot2Col]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][][] dp;
 
     public int cherryPickup(int[][] grid) {
-        int m = grid.length, n = grid[0].length;
-        cache = new int[m][n][n];
-        intializeCache();
+        int m = grid.length;
+        int n = grid[0].length;
+        dp = new Integer[m][n][n];
         return cherryPickup(grid, 0, 0, n - 1, m, n);
     }
 
-    public int cherryPickup(int[][] grid, int row, int col1, int col2, int m, int n) {
+    private int cherryPickup(int[][] grid, int row, int robot1Col, int robot2Col, int m, int n) {
         if (row == m - 1) {
-            if (col1 == col2) {
-                return grid[row][col1];
+            if (robot1Col != robot2Col) {
+                return grid[row][robot1Col] + grid[row][robot2Col];
             }
-            return grid[row][col1] + grid[row][col2];
+
+            return grid[row][robot1Col];
         }
 
-        if (cache[row][col1][col2] != -1) {
-            return cache[row][col1][col2];
+        if (dp[row][robot1Col][robot2Col] != null) {
+            return dp[row][robot1Col][robot2Col];
         }
 
-        int maxCherryCount = Integer.MIN_VALUE;
+        int maxCherries = 0;
 
-        for (int moveRobot1 = -1; moveRobot1 <= 1; moveRobot1++) {
-            for (int moveRobot2 = -1; moveRobot2 <= 1; moveRobot2++) {
-                int robot1NextCol = col1 + moveRobot1;
-                int robot2NextCol = col2 + moveRobot2;
-                int maxCherriesFromPath = 0;
+        for (int move1 = -1; move1 <= 1; move1++) {
+            for (int move2 = -1; move2 <= 1; move2++) {
+                int nextRobot1Col = robot1Col + move1;
+                int nextRobot2Col = robot2Col + move2;
 
-                if (robot1NextCol >= 0 && robot1NextCol < n && robot2NextCol >= 0 && robot2NextCol < n) {
-                    maxCherriesFromPath = cherryPickup(grid, row + 1, robot1NextCol, robot2NextCol, m, n);
-
-                    maxCherriesFromPath += grid[row][col1];
-
-                    if (col1 != col2) {
-                        maxCherriesFromPath += grid[row][col2];
-                    }
-
-                    maxCherryCount = Math.max(maxCherryCount, maxCherriesFromPath);
+                if (nextRobot1Col >= 0 && nextRobot1Col < n && nextRobot2Col >= 0 && nextRobot2Col < n) {
+                    int maxCherriesFromFuture = cherryPickup(grid, row + 1, nextRobot1Col, nextRobot2Col, m, n);
+                    int totalCherries = grid[row][robot1Col] + (robot1Col != robot2Col ? grid[row][robot2Col] : 0) + maxCherriesFromFuture;
+                    maxCherries = Math.max(maxCherries, totalCherries);
                 }
             }
         }
 
-        return cache[row][col1][col2] = maxCherryCount;
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            for (int j = 0; j < cache[0].length; j++) {
-                Arrays.fill(cache[i][j], -1);
-            }
-        }
+        return dp[row][robot1Col][robot2Col] = maxCherries;
     }
 }
 
 
 //Optimal Approach
 
+//Naive implementation
+
 class Solution {
     public int cherryPickup(int[][] grid) {
-        int m = grid.length, n = grid[0].length;
-        /*
-         * dp[row][col1][col2] represents the maximum number of cherries that can be collected starting from row 'row',
-         * with Robot 1 positioned at column 'col1' and Robot 2 positioned at column 'col2'.
-         */
+        int m = grid.length;
+        int n = grid[0].length;
         int[][][] dp = new int[m][n][n];
 
-        for (int col1 = 0; col1 < n; col1++) {
-            for (int col2 = 0; col2 < n; col2++) {
-                if (col1 == col2) {
-                    dp[m - 1][col1][col2] = grid[m - 1][col1];
-                } else {
-                    dp[m - 1][col1][col2] = grid[m - 1][col1] + grid[m - 1][col2];
+        for (int col = 0; col < n; col++) {
+            for (int robot1Col = n - 1; robot1Col >= 0; robot1Col--) {
+                for (int robot2Col = 0; robot2Col < n; robot2Col++) {
+                    if (robot1Col != robot2Col) {
+                        dp[m - 1][robot1Col][robot2Col] = grid[m - 1][robot1Col] + grid[m - 1][robot2Col];
+                    } else {
+                        dp[m - 1][robot1Col][robot2Col] = grid[m - 1][robot1Col];
+                    }
                 }
             }
         }
 
         for (int row = m - 2; row >= 0; row--) {
-            for (int col1 = n - 1; col1 >= 0; col1--) {
-                for (int col2 = n - 1; col2 >= 0; col2--) {
-                    int maxCherryCount = Integer.MIN_VALUE;
+            for (int robot1Col = n - 1; robot1Col >= 0; robot1Col--) {
+                for (int robot2Col = 0; robot2Col < n; robot2Col++) {
+                    int maxCherries = 0;
 
-                    for (int moveRobot1 = -1; moveRobot1 <= 1; moveRobot1++) {
-                        for (int moveRobot2 = -1; moveRobot2 <= 1; moveRobot2++) {
-                            int robot1NextCol = col1 + moveRobot1;
-                            int robot2NextCol = col2 + moveRobot2;
+                    for (int move1 = -1; move1 <= 1; move1++) {
+                        for (int move2 = -1; move2 <= 1; move2++) {
+                            int nextRobot1Col = robot1Col + move1;
+                            int nextRobot2Col = robot2Col + move2;
 
-                            if (robot1NextCol >= 0 && robot1NextCol < n && robot2NextCol >= 0 && robot2NextCol < n) {
-                                int maxCherriesFromPath = dp[row + 1][robot1NextCol][robot2NextCol];
-
-                                maxCherriesFromPath += grid[row][col1];
-                                if (col1 != col2) {
-                                    maxCherriesFromPath += grid[row][col2];
-                                }
-
-                                maxCherryCount = Math.max(maxCherryCount, maxCherriesFromPath);
+                            if (nextRobot1Col >= 0 && nextRobot1Col < n && nextRobot2Col >= 0 && nextRobot2Col < n) {
+                                int maxCherriesFromFuture = dp[row + 1][nextRobot1Col][nextRobot2Col];
+                                int totalCherries = grid[row][robot1Col] + (robot1Col != robot2Col ? grid[row][robot2Col] : 0) + maxCherriesFromFuture;
+                                maxCherries = Math.max(maxCherries, totalCherries);
                             }
                         }
                     }
-
-                    dp[row][col1][col2] = maxCherryCount;
+                    dp[row][robot1Col][robot2Col] = maxCherries;
                 }
             }
         }
@@ -167,51 +195,66 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal implementation
 
 class Solution {
     public int cherryPickup(int[][] grid) {
-        int m = grid.length, n = grid[0].length;
+        int m = grid.length;
+        int n = grid[0].length;
 
+        /*
+        * Space Optimization (from 3D → 2D):
+        *
+        * - In the 3D DP approach:
+        *     dp[row][robot1Col][robot2Col] represents the maximum cherries  collectible from this state.
+        *
+        * - Transition:
+        *     dp[row][c1][c2] depends only on the next row:
+        *         → dp[row + 1][nextC1][nextC2]
+        *
+        * - Since the current state depends ONLY on the next row (row + 1),
+        *   we do not need to store all rows in a 3D array.
+        *
+        * - Instead, we keep only two 2D arrays:
+        *     → nextRow[c1][c2]    → represents dp[row + 1][c1][c2]
+        *     → currentRow[c1][c2] → represents dp[row][c1][c2]
+        *
+        */
         int[][] currentRow = new int[n][n];
         int[][] nextRow = new int[n][n];
 
-        for (int col1 = 0; col1 < n; col1++) {
-            for (int col2 = 0; col2 < n; col2++) {
-                if (col1 == col2) {
-                    nextRow[col1][col2] = grid[m - 1][col1];
-                } else {
-                    nextRow[col1][col2] = grid[m - 1][col1] + grid[m - 1][col2];
+        for (int col = 0; col < n; col++) {
+            for (int robot1Col = n - 1; robot1Col >= 0; robot1Col--) {
+                for (int robot2Col = 0; robot2Col < n; robot2Col++) {
+                    nextRow[robot1Col][robot2Col] = grid[m - 1][robot1Col];
+                    if (robot1Col != robot2Col) {
+                        nextRow[robot1Col][robot2Col] += grid[m - 1][robot2Col];
+                    }
                 }
             }
         }
 
         for (int row = m - 2; row >= 0; row--) {
-            for (int col1 = n - 1; col1 >= 0; col1--) {
-                for (int col2 = n - 1; col2 >= 0; col2--) {
-                    int maxCherryCount = Integer.MIN_VALUE;
+            for (int robot1Col = n - 1; robot1Col >= 0; robot1Col--) {
+                for (int robot2Col = 0; robot2Col < n; robot2Col++) {
+                    int maxCherries = 0;
 
-                    for (int moveRobot1 = -1; moveRobot1 <= 1; moveRobot1++) {
-                        for (int moveRobot2 = -1; moveRobot2 <= 1; moveRobot2++) {
-                            int robot1NextCol = col1 + moveRobot1;
-                            int robot2NextCol = col2 + moveRobot2;
+                    for (int move1 = -1; move1 <= 1; move1++) {
+                        for (int move2 = -1; move2 <= 1; move2++) {
+                            int nextRobot1Col = robot1Col + move1;
+                            int nextRobot2Col = robot2Col + move2;
 
-                            if (robot1NextCol >= 0 && robot1NextCol < n && robot2NextCol >= 0 && robot2NextCol < n) {
-                                int maxCherriesFromPath = nextRow[robot1NextCol][robot2NextCol];
-
-                                maxCherriesFromPath += grid[row][col1];
-                                if (col1 != col2) {
-                                    maxCherriesFromPath += grid[row][col2];
-                                }
-
-                                maxCherryCount = Math.max(maxCherryCount, maxCherriesFromPath);
+                            if (nextRobot1Col >= 0 && nextRobot1Col < n && nextRobot2Col >= 0 && nextRobot2Col < n) {
+                                int maxCherriesFromFuture = nextRow[nextRobot1Col][nextRobot2Col];
+                                int totalCherries = grid[row][robot1Col] + (robot1Col != robot2Col ? grid[row][robot2Col] : 0) + maxCherriesFromFuture;
+                                maxCherries = Math.max(maxCherries, totalCherries);
                             }
                         }
                     }
-
-                    currentRow[col1][col2] = maxCherryCount;
+                    currentRow[robot1Col][robot2Col] = maxCherries;
                 }
             }
+
             int[][] temp = currentRow;
             currentRow = nextRow;
             nextRow = temp;
