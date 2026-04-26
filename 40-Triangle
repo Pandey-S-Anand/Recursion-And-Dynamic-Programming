@@ -50,11 +50,27 @@ class Solution {
 //Better Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[row][col] stores the minimum path sum required to reach
+    * the bottom of the triangle starting from position (row, col).
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → minimum cost from (row, col) to the bottom
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[row][col]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
 
     public int minimumTotal(List<List<Integer>> triangle) {
-        cache = new int[triangle.size()][triangle.get(triangle.size() - 1).size()];
-        intializeCache();
+        int totalRows = triangle.size();
+        int lastRowSize = triangle.get(triangle.size() - 1).size();
+
+        dp = new Integer[totalRows][lastRowSize];
+
         return minimumTotal(triangle, 0, 0);
     }
 
@@ -63,45 +79,40 @@ class Solution {
             return triangle.get(row).get(col);
         }
 
-        if (cache[row][col] != -1) {
-            return cache[row][col];
+        if (dp[row][col] != null) {
+            return dp[row][col];
         }
 
         int straightDown = minimumTotal(triangle, row + 1, col);
         int diagonalDown = minimumTotal(triangle, row + 1, col + 1);
 
-        return cache[row][col] = triangle.get(row).get(col) + Math.min(straightDown, diagonalDown);
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[row][col] = triangle.get(row).get(col) + Math.min(straightDown, diagonalDown);
     }
 }
 
 
 //Optimal Approach
 
+//Naive implementation
+
 class Solution {
     public int minimumTotal(List<List<Integer>> triangle) {
-        int m = triangle.size();
-        int n = triangle.get(triangle.size() - 1).size();
+        int totalRows = triangle.size();
+        int lastRowSize = triangle.get(triangle.size() - 1).size();
 
-        // dp[row][col] will store the minimum path sum starting from triangle[row][col] to the bottom of the triangle.
-        int[][] dp = new int[m][n];
+        /*
+        * dp[row][col] represents the minimum path sum required to reach
+        * the bottom of the triangle starting from position (row, col).
+        */
+        int[][] dp = new int[totalRows][lastRowSize];
 
-        for (int col = 0; col < n; col++) {
-            dp[m - 1][col] = triangle.get(m - 1).get(col);
+        for (int col = 0; col <= totalRows - 1; col++) {
+            dp[totalRows - 1][col] = triangle.get(totalRows - 1).get(col);
         }
 
-        for (int row = m - 2; row >= 0; row--) {
-            // For the current row, iterate over the valid columns, which range from 0 to the row index.
-            for (int col = row; col >= 0; col--) {
-                int straightDown = dp[row + 1][col];
-                int diagonalDown = dp[row + 1][col + 1];
-
-                dp[row][col] = triangle.get(row).get(col) + Math.min(straightDown, diagonalDown);
+        for (int row = totalRows - 2; row >= 0; row--) {
+            for (int col = triangle.get(row).size() - 1; col >= 0; col--) {
+                dp[row][col] = triangle.get(row).get(col) + Math.min(dp[row + 1][col], dp[row + 1][col + 1]);
             }
         }
 
@@ -110,22 +121,41 @@ class Solution {
 }
 
 
-//Aliter (space optimised)
+//Optimal implementation
 
 class Solution {
     public int minimumTotal(List<List<Integer>> triangle) {
-        int m = triangle.size();
-        int n = triangle.get(triangle.size() - 1).size();
+        int totalRows = triangle.size();
+        int lastRowSize = triangle.get(triangle.size() - 1).size();
 
-        int[] currentRow = new int[n];
-        int[] nextRow = new int[n];
+        /*
+        * Space Optimization (from 2D → 1D):
+        *
+        * - In the 2D DP approach, dp[row][col] depends only on:
+        *     → dp[row + 1][col]       (straight down)
+        *     → dp[row + 1][col + 1]   (diagonal down)
+        *
+        * - Since each state depends only on the next row,
+        *   we do not need to store the entire 2D dp array.
+        *
+        * - Instead, we use two 1D arrays:
+        *     → nextRow[col]    → represents dp[row + 1][col]
+        *     → currentRow[col] → represents dp[row][col]
+        *
+        *     → currentRow becomes nextRow for the next iteration
+        *
+        * - This reduces space complexity from O(n²) → O(n)
+        *   while preserving the same DP logic.
+        */
+        int[] nextRow = new int[lastRowSize];
+        int[] currentRow = new int[lastRowSize];
 
-        for (int col = 0; col < n; col++) {
-            nextRow[col] = triangle.get(m - 1).get(col);
+        for (int col = 0; col <= totalRows - 1; col++) {
+            nextRow[col] = triangle.get(totalRows - 1).get(col);
         }
 
-        for (int row = m - 2; row >= 0; row--) {
-            for (int col = row; col >= 0; col--) {
+        for (int row = totalRows - 2; row >= 0; row--) {
+            for (int col = triangle.get(row).size() - 1; col >= 0; col--) {
                 currentRow[col] = triangle.get(row).get(col) + Math.min(nextRow[col], nextRow[col + 1]);
             }
 
@@ -135,29 +165,5 @@ class Solution {
         }
 
         return nextRow[0];
-    }
-}
-
-
-//Aliter (Further space optimised)
-
-class Solution {
-    public int minimumTotal(List<List<Integer>> triangle) {
-        int m = triangle.size();
-        int n = triangle.get(triangle.size() - 1).size();
-
-        int[] dp = new int[n];
-
-        for (int col = 0; col < n; col++) {
-            dp[col] = triangle.get(m - 1).get(col);
-        }
-
-        for (int row = m - 2; row >= 0; row--) {
-            for (int col = 0; col <= row; col++) {
-                dp[col] = triangle.get(row).get(col) + Math.min(dp[col], dp[col + 1]);
-            }
-        }
-
-        return dp[0];
     }
 }
