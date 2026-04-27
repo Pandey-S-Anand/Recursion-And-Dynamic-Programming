@@ -3,32 +3,30 @@
 class Solution {
     public int minCost(int n, int[] cuts) {
         /*
-         * Sorting the cuts array is crucial because it ensures that when we make a cut,
-         * the stick is divided into valid left and right segments. Without sorting,
-         * cuts would not follow a logical order, leading to invalid divisions.
-         *
-         * Example with sorting:
-         * n = 7
-         * cuts = [4, 1, 3] → After Sorting: [1, 3, 4]
-         * 
-         * Steps (with sorting):
-         * 1. First Cut: At position `1`, divides the stick into `[0, 1]` and `[1, 7]`.
-         * 2. Second Cut: At position `3` within `[1, 7]`, divides it into `[1, 3]` and
-         * `[3, 7]`.
-         * 3. Third Cut: At position `4` within `[3, 7]`, divides it into `[3, 4]` and
-         * `[4, 7]`.
-         * 
-         * Example without sorting:
-         * n = 7
-         * cuts = [4, 1, 3] (unsorted cuts)
-         * 
-         * Steps (without sorting):
-         * 1. First Cut: At position `4`, divides the stick into `[0, 4]` and `[4, 7]`.
-         * 2. Second Cut: At position `1` within `[4, 7]`, but this is invalid because
-         * the position `1` is outside the range of the current segment `[4, 7]`.
-         * The cut at position `1` is not valid because it is in the left half, which
-         * leads to an invalid division of the stick.
-         */
+        * Why sorting cuts is necessary:
+        *
+        * - Each cut divides the stick into smaller segments.
+        *
+        * - For any segment [startStick, endStick], we should only consider
+        *   cuts that lie within this range.
+        *
+        * - Sorting ensures cuts are in increasing order, so every cut naturally
+        *   falls within the correct segment and results in valid left and right splits:
+        *     → left  = [startStick, cuts[k]]
+        *     → right = [cuts[k], endStick]
+        *
+        * - Without sorting:
+        *     → we may pick a cut outside the current segment
+        *     → leading to invalid splits and incorrect results
+        *
+        * Example:
+        * cuts = [4, 1, 3], n = 7
+        *
+        * After sorting → [1, 3, 4] → all cuts fall within valid segments
+        * Without sorting → trying cut = 1 inside [4, 7] is invalid
+        *
+        * Hence, sorting ensures correct segmentation and valid recursion.
+        */
         Arrays.sort(cuts);
         return calculateMinCost(cuts, 0, n, 0, cuts.length - 1);
     }
@@ -56,15 +54,41 @@ class Solution {
 }
 
 
+
 //Better Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+     * Memoization:
+     * dp[leftIndex][rightIndex] stores the minimum cost required to perform
+     * all cuts between indices leftIndex and rightIndex (inclusive).
+     *
+     * Meaning of values:
+     * - null → this subproblem has NOT been computed yet
+     * - value → minimum cost to perform all cuts within this range
+     *
+     * Important:
+     * - Although startStick and endStick are passed as parameters,
+     *   they are implicitly determined by leftIndex and rightIndex
+     *   because the cuts array is sorted.
+     *
+     *     → startStick = (leftIndex > 0) ? cuts[leftIndex - 1] : 0
+     *     → endStick   = (rightIndex < cuts.length - 1) ? cuts[rightIndex + 1] : n
+     *
+     * - Hence, for a given (leftIndex, rightIndex), the segment boundaries
+     *   are fixed and do not need to be stored separately in the DP state.
+     *
+     * - Therefore, dp depends only on indices, not on startStick/endStick.
+     *
+     * If a state is already computed, return it directly.
+     * Otherwise, compute and store it in dp[leftIndex][rightIndex]
+     * to avoid recomputation of overlapping subproblems.
+     */
+    private Integer[][] dp;
 
     public int minCost(int n, int[] cuts) {
+        dp = new Integer[cuts.length][cuts.length];
         Arrays.sort(cuts);
-        cache = new int[cuts.length][cuts.length];
-        intializeCache();
         return calculateMinCost(cuts, 0, n, 0, cuts.length - 1);
     }
 
@@ -73,11 +97,12 @@ class Solution {
             return 0;
         }
 
-        if (cache[leftIndex][rightIndex] != -1) {
-            return cache[leftIndex][rightIndex];
+        if (dp[leftIndex][rightIndex] != null) {
+            return dp[leftIndex][rightIndex];
         }
 
         int minCost = Integer.MAX_VALUE;
+
         for (int partition = leftIndex; partition <= rightIndex; partition++) {
             int leftCost = calculateMinCost(cuts, startStick, cuts[partition], leftIndex, partition - 1);
             int rightCost = calculateMinCost(cuts, cuts[partition], endStick, partition + 1, rightIndex);
@@ -85,14 +110,9 @@ class Solution {
             minCost = Math.min(minCost, currentCost);
         }
 
-        return cache[leftIndex][rightIndex] = minCost;
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[leftIndex][rightIndex] = minCost;
     }
 }
+
 
 //Optimal Approach
