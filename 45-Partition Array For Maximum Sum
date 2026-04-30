@@ -1,3 +1,40 @@
+/*
+ * Example:
+ * arr = [1, 15, 7, 9, 2], k = 3
+ *
+ * We can create partitions of size at most 3.
+ *
+ * Suppose we choose:
+ *
+ *   [1, 15, 7] | [9, 2]
+ *
+ * Step 1: Partition = [1, 15, 7]
+ * - max element = 15
+ * - partition size = 3
+ *
+ * After replacement:
+ *   [15, 15, 15]
+ *
+ * Contribution:
+ *   15 × 3 = 45
+ *
+ * Step 2: Partition = [9, 2]
+ * - max element = 9
+ * - partition size = 2
+ *
+ * After replacement:
+ *   [9, 9]
+ *
+ * Contribution:
+ *   9 × 2 = 18
+ *
+ * Final transformed array:
+ *   [15, 15, 15, 9, 9]
+ *
+ * Total sum:
+ *   45 + 18 = 63
+ */
+
 //Bruteforce Approach
 
 class Solution {
@@ -6,39 +43,69 @@ class Solution {
     }
 
     private int maxSumAfterPartitioning(int[] arr, int index, int k) {
-        // Base case: If we have processed the entire array, return 0
+        // Base case: all elements have been partitioned
         if (index == arr.length) {
             return 0;
         }
 
-        int maxSum = Integer.MIN_VALUE; // To track the maximum sum found so far
-        int maxInCurrentSubarray = Integer.MIN_VALUE; // Tracks the maximum element in the current subarray of a certain size being considered.
+        // Tracks the maximum element in the current partition
+        int maxInCurrentPartition = Integer.MIN_VALUE;
 
-        for (int size = 1; size <= k; size++) {
-            // Ensure the subarray size being considered is within bounds
-            if (index + size - 1 >= arr.length) {
+        // Stores the maximum sum obtainable from all valid partition choices
+        int maxPartitionSum = Integer.MIN_VALUE;
+
+        // Try all possible partition sizes from 1 to k
+        for (int partitionSize = 1; partitionSize <= k; partitionSize++) {
+            // Partition exceeds array bounds
+            if (index + partitionSize > arr.length) {
                 break;
             }
 
-            // Update the maximum element in the current subarray of the size being considered
-            maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
-            // Update the maximum sum obtained across all possible subarray sizes
-            maxSum = Math.max(maxSum, maxInCurrentSubarray * size + maxSumAfterPartitioning(arr, index + size, k));
+            // Expand the current partition and update its maximum element
+            maxInCurrentPartition = Math.max(maxInCurrentPartition, arr[index + partitionSize - 1]);
+
+            /*
+            * Contribution of the current partition:
+            * - Every element in this partition becomes equal to
+            *   the maximum element in the partition.
+            *
+            * - Hence, contribution =
+            *     max element in partition × partition size
+            *
+            * - Add the maximum sum obtainable from the remaining array recursively.
+            */
+            int totalSumWithCurrentPartition = (maxInCurrentPartition * partitionSize) + maxSumAfterPartitioning(arr, index + partitionSize, k);
+
+            // Track the best answer among all partition choices
+            maxPartitionSum = Math.max(maxPartitionSum, totalSumWithCurrentPartition);
         }
 
-        return maxSum;
+        return maxPartitionSum;
     }
 }
+
 
 
 //Better Approach
 
 class Solution {
-    private int[] cache;
+    /*
+    * Memoization:
+    * dp[index] stores the maximum sum obtainable starting from index 'index'
+    * after partitioning the remaining array.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → maximum sum obtainable from index → end
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[index]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[] dp;
 
     public int maxSumAfterPartitioning(int[] arr, int k) {
-        cache = new int[arr.length];
-        Arrays.fill(cache, -1);
+        dp = new Integer[arr.length];
         return maxSumAfterPartitioning(arr, 0, k);
     }
 
@@ -47,51 +114,63 @@ class Solution {
             return 0;
         }
 
-        if (cache[index] != -1) {
-            return cache[index];
+        if (dp[index] != null) {
+            return dp[index];
         }
 
-        int maxSum = Integer.MIN_VALUE;
-        int maxInCurrentSubarray = Integer.MIN_VALUE;
+        int maxInCurrentPartition = Integer.MIN_VALUE;
+        int maxPartitionSum = Integer.MIN_VALUE;
 
-        for (int size = 1; size <= k; size++) {
-            if (index + size - 1 >= arr.length) {
+        for (int partitionSize = 1; partitionSize <= k; partitionSize++) {
+            if (index + partitionSize > arr.length) {
                 break;
             }
 
-            maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
-            maxSum = Math.max(maxSum, maxInCurrentSubarray * size + maxSumAfterPartitioning(arr, index + size, k));
+            maxInCurrentPartition = Math.max(maxInCurrentPartition, arr[index + partitionSize - 1]);
+
+            int totalSumWithCurrentPartition = (maxInCurrentPartition * partitionSize) + maxSumAfterPartitioning(arr, index + partitionSize, k);
+
+            maxPartitionSum = Math.max(maxPartitionSum, totalSumWithCurrentPartition);
         }
 
-        return cache[index] = maxSum;
+        return dp[index] = maxPartitionSum;
     }
 }
+
 
 
 //Optimal Approach
 
 class Solution {
     public int maxSumAfterPartitioning(int[] arr, int k) {
+        /*
+        * dp[i] represents the maximum sum obtainable starting from index 'i'
+        * after partitioning the remaining array.
+        */
         int[] dp = new int[arr.length + 1];
 
         dp[arr.length] = 0;
 
-        for (int index = arr.length - 1; index >= 0; index--) {
-            int maxSum = Integer.MIN_VALUE;
-            int maxInCurrentSubarray = Integer.MIN_VALUE;
+        for (int i = arr.length - 1; i >= 0; i--) {
+            int maxInCurrentPartition = Integer.MIN_VALUE;
+            int maxPartitionSum = Integer.MIN_VALUE;
 
-            for (int size = 1; size <= k; size++) {
-                if (index + size - 1 >= arr.length) {
+            for (int partitionSize = 1; partitionSize <= k; partitionSize++) {
+                if (i + partitionSize > arr.length) {
                     break;
                 }
 
-                maxInCurrentSubarray = Math.max(maxInCurrentSubarray, arr[index + size - 1]);
-                maxSum = Math.max(maxSum, maxInCurrentSubarray * size + dp[index + size]);
+                maxInCurrentPartition = Math.max(maxInCurrentPartition, arr[i + partitionSize - 1]);
+
+                int totalSumWithCurrentPartition = (maxInCurrentPartition * partitionSize) + dp[i + partitionSize];
+
+                maxPartitionSum = Math.max(maxPartitionSum, totalSumWithCurrentPartition);
             }
 
-            dp[index] = maxSum;
+            dp[i] = maxPartitionSum;
         }
 
         return dp[0];
     }
 }
+
