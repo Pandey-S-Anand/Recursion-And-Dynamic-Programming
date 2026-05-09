@@ -20,12 +20,12 @@ Logic :
 
 //Bruteforce Approach
 
-lass Solution {
-    static int numberOfWays(int n) {
+class Solution {
+    public int numberOfWays(int n) {
         return countWays(n);
     }
 
-    private static int countWays(int n) {
+    private int countWays(int n) {
         /*
          * Base cases:
          * If the length of the floor is 1 (2 x 1 floor), there is only 1 way to tile it (place a single vertical tile).
@@ -44,42 +44,59 @@ lass Solution {
 //Better Approach
 
 class Solution {
-    private static int[] cache;
+    /*
+    * Memoization :
+    *
+    * dp[n] stores the number of ways to tile a 2 × n board
+    * using 2 × 1 tiles (placed either vertically or horizontally).
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → total number of ways to tile a 2 × n board
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[n]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[] dp;
 
-    static int numberOfWays(int n) {
-        cache = new int[n + 1];
+    public int numberOfWays(int n) {
+        dp = new Integer[n + 1];
         return countWays(n);
     }
 
-    private static int countWays(int n) {
+    private int countWays(int n) {
         if (n <= 2) {
             return n;
         }
 
-        if (cache[n] != 0) {
-            return cache[n];
+        if (dp[n] != null) {
+            return dp[n];
         }
 
-        return cache[n] = countWays(n - 1) + countWays(n - 2);
+        return dp[n] = countWays(n - 1) + countWays(n - 2);
     }
 }
 
 
 //Optimal Approach
 
+//Naive implementation
+
 class Solution {
-    static int numberOfWays(int n) {
-        if (n <= 2) {
-            return n;
+    public int numberOfWays(int n) {
+        if (n == 1) {
+            return 1;
         }
 
+        // dp[breadth] represents the number of ways to tile a 2 × breadth board using 2 × 1 tiles.
         int[] dp = new int[n + 1];
 
         dp[1] = 1;
         dp[2] = 2;
 
-        for (int width = 3; width <= n; width++) {
-            dp[width] = dp[width - 1] + dp[width - 2];
+        for (int breadth = 3; breadth <= n; breadth++) {
+            dp[breadth] = dp[breadth - 1] + dp[breadth - 2];
         }
 
         return dp[n];
@@ -87,23 +104,23 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal implementation
 
 class Solution {
-    static int numberOfWays(int n) {
-        if (n <= 2) {
-            return n;
+    public int numberOfWays(int n) {
+        if (n == 1) {
+            return 1;
         }
 
-        int previous2 = 1;
-        int previous1 = 2;
+        int waysForPrevPrevWidth = 1;
+        int waysForPrevWidth = 2;
 
-        for (int width = 3; width <= n; width++) {
-            int current = previous1 + previous2;
-            previous2 = previous1;
-            previous1 = current;
+        for (int breadth = 3; breadth <= n; breadth++) {
+            int currentWidth = waysForPrevWidth + waysForPrevPrevWidth;
+            waysForPrevPrevWidth = waysForPrevWidth;
+            waysForPrevWidth = currentWidth;
         }
 
-        return previous1;
+        return waysForPrevWidth;
     }
 }
