@@ -45,9 +45,6 @@ class Solution {
             return 1;
         }
 
-        // Recurrence relation for tiling:
-        // 1. If we place the first tile horizontally, the remaining floor is of size (n - 1) x m.
-        // 2. If we place the first tile vertically, the remaining floor is of size (n - m) x m.
         return (countWaysToTileFloor(n - 1, m) % MOD + countWaysToTileFloor(n - m, m) % MOD) % MOD;
     }
 }
@@ -56,11 +53,27 @@ class Solution {
 // Better Approach
 
 class Solution {
+    /*
+    * Memoization (Tiling n × m floor with 1 × m tiles):
+    *
+    * dp[n] stores the number of ways to tile a floor of size n × m
+    * using tiles of size 1 × m.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → total number of ways to tile a floor of size n × m
+    *
+    * - Results are taken modulo 1e9 + 7 to prevent overflow
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[n]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[] dp;
     private static final int MOD = 1000000007;
-    private int[] cache;
 
     public int countWays(int n, int m) {
-        cache = new int[n + 1];
+        dp = new Integer[n + 1];
         return countWaysToTileFloor(n, m);
     }
 
@@ -69,32 +82,34 @@ class Solution {
             return 1;
         }
 
-        if (cache[n] != 0) {
-            return cache[n];
+        if (dp[n] != null) {
+            return dp[n];
         }
 
-        return cache[n] = (countWaysToTileFloor(n - 1, m) % MOD + countWaysToTileFloor(n - m, m) % MOD) % MOD;
+        return dp[n] = (countWaysToTileFloor(n - 1, m) % MOD + countWaysToTileFloor(n - m, m) % MOD) % MOD;
     }
 }
 
 
 //Optimal Approach
 
-class Solution{
+class Solution {
     private static final int MOD = 1000000007;
 
-    public int countWays(int n, int m){
-      // dp[i]: The number of ways to tile a floor of height i and width m using tiles of size 1 x m.
-      int[] dp = new int[n + 1];
-      
-        for (int height = 0; height <= n; height++) {
-            if (height < m) {
-                dp[height] = 1;
-            } else {
-                dp[height] = (dp[height - 1] % MOD + dp[height - m] % MOD) % MOD;
+    public int countWays(int n, int m) {
+        // dp[i]: The number of ways to tile a floor of height i and width m using tiles of size 1 x m.
+        int[] dp=new int[n+1];
+        
+        dp[0] = 1; // Base case: dp[0] = 1 → one valid way to tile a floor of length 0 (do nothing)
+        
+        for(int length=1;length<=n;length++){
+            if(length < m){
+               dp[length]=1;      
+            }else{
+               dp[length] = (dp[length - 1] % MOD + dp[length - m] % MOD) % MOD;      
             }
         }
-
+        
         return dp[n];
     }
 }
