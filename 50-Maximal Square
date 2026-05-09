@@ -1,3 +1,26 @@
+/*
+ * Intuition:
+ *
+ * - We iterate over every cell in the matrix.
+ * - For each cell that contains '1', we treat it as the top-left corner
+ *   of a square and try to find the largest square (all 1s) that can be
+ *   formed starting from that cell.
+ *
+ * - The helper function maxSquareSizeFromCell(row, col) returns:
+ *     → the size of the largest square submatrix (all 1s)
+ *       having (row, col) as its top-left corner.
+ *
+ * - Since it is a square, all sides are equal,
+ *   so this size is also the side length of the largest square
+ *   with (row, col) as its top-left corner.
+ *
+ * - Once we know the side length, we compute the area:
+ *
+ *       area = side × side
+ *
+ * - We keep track of the maximum area across all such starting points.
+ */
+
 //Bruteforce Approach
 
 class Solution {
@@ -5,14 +28,10 @@ class Solution {
         int maxSquareArea = 0;
         for (int row = 0; row < matrix.length; row++) {
             for (int col = 0; col < matrix[0].length; col++) {
-                // Only consider cells with '1' as starting points for squares
                 if (matrix[row][col] == '1') {
-                    // Get the side length of the largest square that can start from this cell
-                    int currentMaxSideLength = getMaxSquareSideFromCell(matrix, row, col);
-                    // Calculate the area of the square with the obtained side length
-                    int currentSquareArea = currentMaxSideLength * currentMaxSideLength;
-                    // Update the maximum square area if the current one is larger
-                    maxSquareArea = Math.max(maxSquareArea, currentSquareArea);
+                    int maxSideFromCurrentCell = maxSquareSizeFromCell(matrix, row, col);
+                    int areaFromCurrentCell = maxSideFromCurrentCell * maxSideFromCurrentCell;
+                    maxSquareArea = Math.max(maxSquareArea, areaFromCurrentCell);
                 }
             }
         }
@@ -20,28 +39,20 @@ class Solution {
         return maxSquareArea;
     }
 
-    private int getMaxSquareSideFromCell(char[][] matrix, int row, int col) {
-        // Base case: If the cell is out of bounds, return 0
+    private int maxSquareSizeFromCell(char[][] matrix, int row, int col) {
         if (row == matrix.length || col == matrix[0].length) {
             return 0;
         }
 
-        // If the current cell is '0', no square can start from here
         if (matrix[row][col] == '0') {
             return 0;
         }
 
-        // Recursively get the side lengths of squares in three directions:
-        int rightSideLength = getMaxSquareSideFromCell(matrix, row, col + 1); // To the right
-        int diagonalSideLength = getMaxSquareSideFromCell(matrix, row + 1, col + 1); // Diagonally down-right
-        int downSideLength = getMaxSquareSideFromCell(matrix, row + 1, col); // Downwards
+        int rightSquareSize = maxSquareSizeFromCell(matrix, row, col + 1);
+        int downSquareSize = maxSquareSizeFromCell(matrix, row + 1, col);
+        int diagonalSquareSize = maxSquareSizeFromCell(matrix, row + 1, col + 1);
 
-        /*
-         * The side length of the largest square that can start from this cell
-         * is determined by the smallest side length among the three directions.
-         * Add 1 to include the current cell itself (forming a 1x1 square).
-         */
-        return 1 + Math.min(rightSideLength, Math.min(diagonalSideLength, downSideLength));
+        return 1 + Math.min(rightSquareSize, Math.min(downSquareSize, diagonalSquareSize));
     }
 }
 
@@ -49,19 +60,31 @@ class Solution {
 //Improved Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[row][col] stores the side length of the largest square submatrix (all 1s)
+    * where (row, col) acts as the top-left corner.
+    *
+    * Meaning of values:
+    * - null → this state has NOT been computed yet
+    * - value → maximum side length of square with (row, col) as top-left corner
+    *
+    * If a state is already computed, return it directly.
+    * Otherwise, compute and store it in dp[row][col]
+    * to avoid recomputation of overlapping subproblems.
+    */
+    private Integer[][] dp;
 
     public int maximalSquare(char[][] matrix) {
-        cache = new int[matrix.length][matrix[0].length];
-        intializeCache();
-
+        dp = new Integer[matrix.length + 1][matrix[0].length + 1];
         int maxSquareArea = 0;
+
         for (int row = 0; row < matrix.length; row++) {
             for (int col = 0; col < matrix[0].length; col++) {
                 if (matrix[row][col] == '1') {
-                    int currentMaxSideLength = getMaxSquareSideFromCell(matrix, row, col);
-                    int currentSquareArea = currentMaxSideLength * currentMaxSideLength;
-                    maxSquareArea = Math.max(maxSquareArea, currentSquareArea);
+                    int maxSideFromCurrentCell = maxSquareSizeFromCell(matrix, row, col);
+                    int areaFromCurrentCell = maxSideFromCurrentCell * maxSideFromCurrentCell;
+                    maxSquareArea = Math.max(maxSquareArea, areaFromCurrentCell);
                 }
             }
         }
@@ -69,7 +92,7 @@ class Solution {
         return maxSquareArea;
     }
 
-    private int getMaxSquareSideFromCell(char[][] matrix, int row, int col) {
+    private int maxSquareSizeFromCell(char[][] matrix, int row, int col) {
         if (row == matrix.length || col == matrix[0].length) {
             return 0;
         }
@@ -78,21 +101,15 @@ class Solution {
             return 0;
         }
 
-        if (cache[row][col] != -1) {
-            return cache[row][col];
+        if (dp[row][col] != null) {
+            return dp[row][col];
         }
 
-        int rightSideLength = getMaxSquareSideFromCell(matrix, row, col + 1);
-        int diagonalSideLength = getMaxSquareSideFromCell(matrix, row + 1, col + 1);
-        int downSideLength = getMaxSquareSideFromCell(matrix, row + 1, col);
+        int rightSquareSize = maxSquareSizeFromCell(matrix, row, col + 1);
+        int downSquareSize = maxSquareSizeFromCell(matrix, row + 1, col);
+        int diagonalSquareSize = maxSquareSizeFromCell(matrix, row + 1, col + 1);
 
-        return cache[row][col] = 1 + Math.min(rightSideLength, Math.min(diagonalSideLength, downSideLength));
-    }
-
-    private void intializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return dp[row][col] = 1 + Math.min(rightSquareSize, Math.min(downSquareSize, diagonalSquareSize));
     }
 }
 
@@ -103,10 +120,12 @@ class Solution {
 
 class Solution {
     public int maximalSquare(char[][] matrix) {
-        // dp[i][j] represents the side length of the largest square submatrix whose bottom-right corner is at (i, j).
+        /*
+        * dp[row][col] represents the side length of the largest square submatrix (all 1s)
+        * where (row, col) is the top-left corner of that square.
+        */
         int[][] dp = new int[matrix.length + 1][matrix[0].length + 1];
-
-        dp[matrix.length][matrix[0].length] = 0;
+        int maxSquareArea = 0;
 
         for (int col = 0; col < matrix[0].length; col++) {
             dp[matrix.length][col] = 0;
@@ -116,17 +135,16 @@ class Solution {
             dp[row][matrix[0].length] = 0;
         }
 
-        int maxSquareArea = 0;
         for (int row = matrix.length - 1; row >= 0; row--) {
             for (int col = matrix[0].length - 1; col >= 0; col--) {
                 if (matrix[row][col] == '1') {
-                    int rightSideLength = dp[row][col + 1];
-                    int diagonalSideLength = dp[row + 1][col + 1];
-                    int downSideLength = dp[row + 1][col];
-
-                    dp[row][col] = 1 + Math.min(rightSideLength, Math.min(diagonalSideLength, downSideLength));
-                    int currentSquareArea = dp[row][col] * dp[row][col];
-                    maxSquareArea = Math.max(maxSquareArea, currentSquareArea);
+                    int rightSquareSize = dp[row][col + 1];
+                    int downSquareSize = dp[row + 1][col];
+                    int diagonalSquareSize = dp[row + 1][col + 1];
+                    int maxSideFromCurrentCell = 1 + Math.min(rightSquareSize, Math.min(downSquareSize, diagonalSquareSize));
+                    dp[row][col] = maxSideFromCurrentCell;
+                    int areaFromCurrentCell = maxSideFromCurrentCell * maxSideFromCurrentCell;
+                    maxSquareArea = Math.max(maxSquareArea, areaFromCurrentCell);
                 } else {
                     dp[row][col] = 0;
                 }
@@ -138,18 +156,19 @@ class Solution {
 }
 
 
-//Optimal Implementation 
+//Better Implementation 
 
 class Solution {
     public int maximalSquare(char[][] matrix) {
         int[][] dp = new int[matrix.length + 1][matrix[0].length + 1];
-
         int maxSquareArea = 0;
+
         for (int row = matrix.length - 1; row >= 0; row--) {
             for (int col = matrix[0].length - 1; col >= 0; col--) {
                 if (matrix[row][col] == '1') {
-                    dp[row][col] = 1 + Math.min(dp[row][col + 1], Math.min(dp[row + 1][col + 1], dp[row + 1][col]));
-                    maxSquareArea = Math.max(maxSquareArea, dp[row][col] * dp[row][col]);
+                    dp[row][col] = 1 + Math.min(dp[row][col + 1], Math.min(dp[row + 1][col], dp[row + 1][col + 1]));
+                    int areaFromCurrentCell = dp[row][col] * dp[row][col];
+                    maxSquareArea = Math.max(maxSquareArea, areaFromCurrentCell);
                 }
             }
         }
@@ -159,19 +178,42 @@ class Solution {
 }
 
 
-//Aliter (Space optimised)
+//Optimal implementation
 
 class Solution {
     public int maximalSquare(char[][] matrix) {
+        /*
+        * Space Optimization:
+        *
+        * Instead of using a 2D dp array, we use two 1D arrays:
+        * - currentRow → represents dp[row][*]
+        * - nextRow    → represents dp[row + 1][*]
+        *
+        * Why this works:
+        * - Each state dp[row][col] depends only on:
+        *     → right    → currentRow[col + 1]
+        *     → down     → nextRow[col]
+        *     → diagonal → nextRow[col + 1]
+        *
+        * - So, while processing a row, we only need:
+        *     → values from the current row (for right)
+        *     → values from the next row (for down & diagonal)
+        *
+        * - Hence, storing the entire 2D dp table is unnecessary.
+        *
+        * This reduces space complexity from O(m * n) → O(n)
+        * while keeping the same logic intact.
+        */
         int[] currentRow = new int[matrix[0].length + 1];
         int[] nextRow = new int[matrix[0].length + 1];
-
         int maxSquareArea = 0;
+
         for (int row = matrix.length - 1; row >= 0; row--) {
             for (int col = matrix[0].length - 1; col >= 0; col--) {
                 if (matrix[row][col] == '1') {
-                    currentRow[col] = 1 + Math.min(currentRow[col + 1], Math.min(nextRow[col + 1], nextRow[col]));
-                    maxSquareArea = Math.max(maxSquareArea, currentRow[col] * currentRow[col]);
+                    currentRow[col] = 1 + Math.min(currentRow[col + 1], Math.min(nextRow[col], nextRow[col + 1]));
+                    int areaFromCurrentCell = currentRow[col] * currentRow[col];
+                    maxSquareArea = Math.max(maxSquareArea, areaFromCurrentCell);
                 } else {
                     currentRow[col] = 0;
                 }
