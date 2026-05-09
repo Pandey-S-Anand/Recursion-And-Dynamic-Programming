@@ -65,10 +65,10 @@ class Solution {
 //Better Approach
 
 class Solution {
-    private int[] cache;
+    private Boolean[] dp;
 
     public int getCount(int x, int y, int n) {
-        cache = new int[n + 1];
+        dp = new Boolean[n + 1];
         int count = 0;
         for (int num = 1; num <= n; num++) {
             if (canBeFormed(num, x, y)) {
@@ -87,12 +87,11 @@ class Solution {
             return false;
         }
 
-        if (cache[num] != 0) {
-            return cache[num] == 1;
+        if (dp[num] != null) {
+            return dp[num];
         }
 
-        cache[num] = (canBeFormed(num - x, x, y) || canBeFormed(num - y, x, y)) ? 1 : -1;
-        return cache[num] == 1;
+        return dp[num] = (canBeFormed(num - x, x, y) || canBeFormed(num - y, x, y));
     }
 }
 
@@ -100,7 +99,7 @@ class Solution {
 //Optimal Approach
 
 class Solution {
-    static int getCount(int x, int y, int n) {
+    public static int getCount(int x, int y, int n) {
         boolean[] dp = new boolean[n + 1]; // dp[i] represents whether it's possible to form the number i using any combination of x and y.
         dp[0] = true; // Base case: 0 can always be formed by choosing zero occurrences of both x and y.
         int count = 0;
