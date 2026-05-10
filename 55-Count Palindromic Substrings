@@ -3,6 +3,7 @@
 class Solution {
     public int countSubstrings(String str) {
         int count = 0;
+
         for (int start = 0; start < str.length(); start++) {
             for (int end = start; end < str.length(); end++) {
                 if (isPalindrome(str, start, end)) {
@@ -15,27 +16,40 @@ class Solution {
     }
 
     private boolean isPalindrome(String str, int start, int end) {
-        while (start < end) {
-            if (str.charAt(start) != str.charAt(end)) {
-                return false;
-            }
-            start++;
-            end--;
+        if (start >= end) {
+            return true;
         }
 
-        return true;
+        if (str.charAt(start) != str.charAt(end)) {
+            return false;
+        }
+
+        return isPalindrome(str, start + 1, end - 1);
     }
 }
 
 
-//Better Approach
+//Improved Approach
 
 class Solution {
-    private int[][] cache;
+    /*
+    * Memoization:
+    * dp[start][end] stores whether the substring from index `start` to `end`
+    * (inclusive) is a palindrome or not.
+    *
+    * Meaning of values:
+    * - null  → this substring has NOT been evaluated yet
+    * - true  → substring [start, end] is a palindrome
+    * - false → substring [start, end] is NOT a palindrome
+    *
+    * If dp[start][end] is already computed, return it directly.
+    * Otherwise, compute and store it.
+    */
+    private Boolean[][] dp;
 
     public int countSubstrings(String str) {
-        cache = new int[str.length()][str.length()];
-        initializeCache();
+        dp = new Boolean[str.length()][str.length()];
+
         int count = 0;
 
         for (int start = 0; start < str.length(); start++) {
@@ -54,44 +68,65 @@ class Solution {
             return true;
         }
 
-        if (cache[start][end] != -1) {
-            return cache[start][end] == 1;
-        }
-
         if (str.charAt(start) != str.charAt(end)) {
-            cache[start][end] = 0;
-            return cache[start][end] == 1;
+            return false;
         }
 
-        cache[start][end] = isPalindrome(str, start + 1, end - 1) ? 1 : 0;
-        return cache[start][end] == 1;
-    }
-
-    private void initializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
+        if (dp[start][end] != null) {
+            return dp[start][end];
         }
+
+        return dp[start][end] = isPalindrome(str, start + 1, end - 1);
     }
 }
 
 
-//Best Approach
+//Good Approach
 
 class Solution {
     public int countSubstrings(String str) {
-        int count = 0;
+        /*
+        * Tabulation (Bottom-Up DP):
+        *
+        * dp[start][end] represents whether the substring str[start...end]
+        * is a palindrome.
+        *
+        * We fill the table diagonally using the "gap" approach:
+        * - gap = end - start
+        *
+        * Cases:
+        *
+        * 1. gap == 0 (single character):
+        *    → always a palindrome
+        *
+        * 2. gap == 1 (two characters):
+        *    → palindrome if both characters are equal
+        *
+        * 3. gap >= 2:
+        *    → palindrome if:
+        *         str[start] == str[end]
+        *         AND inner substring (start+1, end-1) is also palindrome
+        *
+        * As we fill dp, whenever dp[start][end] is true,
+        * we increment the count.
+        *
+        * Final answer:
+        * - total number of palindromic substrings in the string
+        */
         boolean[][] dp = new boolean[str.length()][str.length()];
+        int count = 0;
 
         for (int gap = 0; gap < str.length(); gap++) {
-            for (int i = 0, j = gap; j < str.length(); i++, j++) {
+            for (int start = 0, end = gap; end < str.length(); start++, end++) {
                 if (gap == 0) {
-                    dp[i][j] = true;
+                    dp[start][end] = true;
                 } else if (gap == 1) {
-                    dp[i][j] = str.charAt(i) == str.charAt(j);
+                    dp[start][end] = str.charAt(start) == str.charAt(end);
                 } else {
-                    dp[i][j] = (dp[i + 1][j - 1] && str.charAt(i) == str.charAt(j));
+                    dp[start][end] = (str.charAt(start) == str.charAt(end)) && dp[start + 1][end - 1];
                 }
-                if (dp[i][j]) {
+
+                if (dp[start][end]) {
                     count++;
                 }
             }
@@ -102,26 +137,119 @@ class Solution {
 }
 
 
-//Further optimised approach
+//Better approach
 
+/*
+ * Intuition + Dry Run (Expand Around Center Approach):
+ *
+ * - A palindrome is symmetric around its center.
+ *
+ * - There are two types of palindromic substrings:
+ *
+ *   1. Odd length palindrome:
+ *      → Has a single center character
+ *      → Example: "aba", center = 'b'
+ *
+ *   2. Even length palindrome:
+ *      → Has two center characters
+ *      → Example: "abba", center = "bb"
+ *
+ * ----------------------------------------------------------
+ *
+ * Approach:
+ *
+ * - We treat every index as a potential center of a palindrome.
+ *
+ * - For each index `center`, we do two expansions:
+ *
+ *   1. Odd length:
+ *      → expandFromCentre(center, center)
+ *      → assumes current character is the middle
+ *
+ *   2. Even length:
+ *      → expandFromCentre(center, center + 1)
+ *      → assumes current and next character form the middle
+ *
+ * ----------------------------------------------------------
+ *
+ * Expansion logic:
+ *
+ * - From the chosen center(s), we expand outward:
+ *     → move left pointer to left
+ *     → move right pointer to right
+ *
+ * - As long as:
+ *     → characters at left and right are equal
+ *     → and indices are within bounds
+ *
+ *   we have a valid palindrome.
+ *
+ * - Every successful expansion gives one palindrome,
+ *   so we increment the count.
+ *
+ * ----------------------------------------------------------
+ *
+ * Dry Run:
+ *
+ * Example:
+ * str = "aabbaa"
+ *
+ * ==========================================================
+ * Center = 0 ('a')
+ *   Odd:  "a"
+ *   Even: "aa"
+ *
+ * ==========================================================
+ * Center = 1 ('a')
+ *   Odd:  "a"
+ *   Even: ❌
+ *
+ * ==========================================================
+ * Center = 2 ('b')
+ *   Odd:  "b"
+ *   Even: "bb" → "abba" → "aabbaa"
+ *
+ * ==========================================================
+ * Center = 3 ('b')
+ *   Odd:  "b"
+ *   Even: ❌
+ *
+ * ==========================================================
+ * Center = 4 ('a')
+ *   Odd:  "a"
+ *   Even: "aa"
+ *
+ * ==========================================================
+ * Center = 5 ('a')
+ *   Odd:  "a"
+ *   Even: ❌
+ *
+ * ----------------------------------------------------------
+ *
+ * Palindromes formed:
+ *
+ * - Odd:  "a", "a", "b", "b", "a", "a"
+ * - Even: "aa", "bb", "abba", "aabbaa", "aa"
+ *
+ * Total = 11
+ * ----------------------------------------------------------
+ */
 class Solution {
-    public int countSubstrings(String s) {
+    public int countSubstrings(String str) {
         int count = 0;
 
-        for (int center = 0; center < s.length(); center++) {
-            //count odd length palindromic substrings
-            count += expandAndCount(s, center, center);
-            //count even length palindromic substrings
-            count += expandAndCount(s, center, center + 1);
+        for (int center = 0; center < str.length(); center++) {
+            count += expandAroundCentreAndCount(str, center, center);
+            count += expandAroundCentreAndCount(str, center, center + 1);
         }
 
         return count;
     }
 
-    private int expandAndCount(String s, int left, int right) {
+    private int expandAroundCentreAndCount(String str, int left, int right) {
         int count = 0;
 
-        while (left >= 0 && right < s.length() && s.charAt(left) == s.charAt(right)) {
+        while ((left >= 0 && right < str.length()) && str.charAt(left) == str.charAt(right)) {
             count++;
             left--;
             right++;
@@ -130,6 +258,5 @@ class Solution {
         return count;
     }
 }
-
 
 //Optimal approach (Manachers algorithm)
