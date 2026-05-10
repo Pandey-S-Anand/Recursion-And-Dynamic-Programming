@@ -1,49 +1,32 @@
+/*
+ * Approach:
+ *
+ * - We generate every possible substring using:
+ *     → start index
+ *     → end index
+ *
+ * - For each substring, we check whether it is a palindrome.
+ *
+ * - If the substring is a palindrome and its length is greater
+ *   than the longest palindrome found so far,
+ *   we update:
+ *
+ *     → maxLength
+ *     → bestStart
+ *     → bestEnd
+ */
+
 //Bruteforce Approach
 
 class Solution {
     public String longestPalindrome(String str) {
-        int maxLength = 0, bestStart = 0, bestEnd = 0;
+        int maxLength = 0, bestStart = -1, bestEnd = -1;
 
         for (int start = 0; start < str.length(); start++) {
             for (int end = start; end < str.length(); end++) {
-                if (isPalindrome(str, start, end) && (end - start + 1) > maxLength) {
-                    maxLength = end - start + 1;
-                    bestStart = start;
-                    bestEnd = end;
-                }
-            }
-        }
-
-        return str.substring(bestStart, bestEnd + 1);
-    }
-
-    private boolean isPalindrome(String str, int left, int right) {
-        while (left < right) {
-            if (str.charAt(left) != str.charAt(right)) {
-                return false;
-            }
-            left++;
-            right--;
-        }
-        return true;
-    }
-}
-
-
-//Better Approach
-
-class Solution {
-    private int[][] cache;
-
-    public String longestPalindrome(String str) {
-        cache = new int[str.length()][str.length()];
-        initializeCache();
-        int maxLength = 0, bestStart = 0, bestEnd = 0;
-
-        for (int start = 0; start < str.length(); start++) {
-            for (int end = start; end < str.length(); end++) {
-                if (isPalindrome(str, start, end) && (end - start + 1) > maxLength) {
-                    maxLength = end - start + 1;
+                int length = end - start + 1;
+                if (isPalindrome(str, start, end) && length > maxLength) {
+                    maxLength = length;
                     bestStart = start;
                     bestEnd = end;
                 }
@@ -58,47 +41,137 @@ class Solution {
             return true;
         }
 
-        if (cache[start][end] != -1) {
-            return cache[start][end] == 1;
-        }
-
         if (str.charAt(start) != str.charAt(end)) {
-            cache[start][end] = 0;
             return false;
         }
 
-        cache[start][end] = isPalindrome(str, start + 1, end - 1) ? 1 : 0;
-        return cache[start][end] == 1;
-    }
-
-    private void initializeCache() {
-        for (int i = 0; i < cache.length; i++) {
-            Arrays.fill(cache[i], -1);
-        }
+        return isPalindrome(str, start + 1, end - 1);
     }
 }
 
 
-//Best Approach
+
+//Good Approach
 
 class Solution {
+    /*
+    * Memoization:
+    * dp[start][end] stores whether the substring str[start...end]
+    * is a palindrome or not.
+    *
+    * Meaning of values:
+    * - null  → this substring has NOT been computed yet
+    * - true  → substring str[start...end] is a palindrome
+    * - false → substring str[start...end] is NOT a palindrome
+    *
+    * If dp[start][end] is already computed, return it directly.
+    * Otherwise, compute and store it.
+    */
+    private Boolean[][] dp;
+
+    public String longestPalindrome(String str) {
+        dp = new Boolean[str.length()][str.length()];
+
+        int maxLength = 0, bestStart = -1, bestEnd = -1;
+
+        for (int start = 0; start < str.length(); start++) {
+            for (int end = start; end < str.length(); end++) {
+                int length = end - start + 1;
+                if (isPalindrome(str, start, end) && length > maxLength) {
+                    maxLength = length;
+                    bestStart = start;
+                    bestEnd = end;
+                }
+            }
+        }
+
+        return str.substring(bestStart, bestEnd + 1);
+    }
+
+    private boolean isPalindrome(String str, int start, int end) {
+        if (start >= end) {
+            return true;
+        }
+
+        if (dp[start][end] != null) {
+            return dp[start][end];
+        }
+
+        if (str.charAt(start) != str.charAt(end)) {
+            return false;
+        }
+
+        return dp[start][end] = isPalindrome(str, start + 1, end - 1);
+    }
+}
+
+
+//Better Approach
+
+class Solution {
+    /*
+    * GAP STRATEGY VISUALIZATION 
+    *
+    * Example:
+    * str = "abccbc"
+    *
+    *                                      end →
+    *
+    *             |    a    |    b    |    c    |    c    |    b    |    c    |
+    * --------------------------------------------------------------------------------
+    *         a   |    a    |    ab   |   abc   |  abcc   |  abccb  | abccbc  |
+    * --------------------------------------------------------------------------------
+    *         b   |         |    b    |    bc   |   bcc   |  bccb   |  bccbc  |
+    * --------------------------------------------------------------------------------
+    * start → c   |         |         |    c    |    cc   |   ccb   |  ccbc   |
+    * --------------------------------------------------------------------------------
+    *         c   |         |         |         |    c    |    cb   |   cbc   |
+    * --------------------------------------------------------------------------------
+    *         b   |         |         |         |         |    b    |    bc   |
+    * --------------------------------------------------------------------------------
+    *         c   |         |         |         |         |         |    c    |
+    * --------------------------------------------------------------------------------
+    *
+    *
+    * Gap-wise traversal:
+    *
+    * gap = 0:
+    *     a, b, c, c, b, c
+    *
+    * gap = 1:
+    *     ab, bc, cc, cb, bc
+    *
+    * gap = 2:
+    *     abc, bcc, ccb, cbc
+    *
+    * gap = 3:
+    *     abcc, bccb, ccbc
+    *
+    * gap = 4:
+    *     abccb, bccbc
+    * 
+    * gap = 5:
+    *     abccbc
+    *
+    */
     public String longestPalindrome(String str) {
         int bestStart = 0, bestEnd = 0;
+        // * dp[start][end] stores whether the substring str[start...end] is a palindrome or not.
         boolean[][] dp = new boolean[str.length()][str.length()];
 
         for (int gap = 0; gap < str.length(); gap++) {
-            for (int i = 0, j = gap; j < str.length(); i++, j++) {
+            for (int start = 0, end = gap; end < str.length(); start++, end++) {
                 if (gap == 0) {
-                    dp[i][j] = true;
+                    dp[start][end] = true;
                 } else if (gap == 1) {
-                    dp[i][j] = str.charAt(i) == str.charAt(j);
+                    dp[start][end] = str.charAt(start) == str.charAt(end);
                 } else {
-                    dp[i][j] = (dp[i + 1][j - 1] && str.charAt(i) == str.charAt(j));
+                    dp[start][end] = str.charAt(start) == str.charAt(end) && dp[start + 1][end - 1];
                 }
 
-                if (dp[i][j]) {
-                    bestStart = i;
-                    bestEnd = j;
+                if (dp[start][end]) {
+                    bestStart = start;
+                    bestEnd = end;
                 }
             }
         }
@@ -108,72 +181,158 @@ class Solution {
 }
 
 
-//Optimal Approach
+//Better Approach
 
-//Naive Implementation
-
+/*
+ * Intuition + Dry Run (Expand Around Center Approach):
+ *
+ * - A palindrome is symmetric around its center.
+ *
+ * - There are two types of palindromic substrings:
+ *
+ *   1. Odd length palindrome:
+ *      → Has a single center character
+ *      → Example: "aba", center = 'b'
+ *
+ *   2. Even length palindrome:
+ *      → Has two center characters
+ *      → Example: "abba", center = "bb"
+ *
+ * ----------------------------------------------------------
+ *
+ * Approach:
+ *
+ * - We treat every index as a potential center of a palindrome.
+ *
+ * - For each index `center`, we do two expansions:
+ *
+ *   1. Odd length:
+ *      → expandAroundCenter(center, center)
+ *      → assumes current character is the middle
+ *
+ *   2. Even length:
+ *      → expandAroundCenter(center, center + 1)
+ *      → assumes current and next character form the middle
+ *
+ * ----------------------------------------------------------
+ *
+ * Expansion logic:
+ *
+ * - From the chosen center(s), we expand outward:
+ *     → move left pointer to left
+ *     → move right pointer to right
+ *
+ * - As long as:
+ *     → characters at left and right are equal
+ *     → and indices are within bounds
+ *
+ *   we can keep expanding the palindrome.
+ *
+ * - Every successful expansion gives us a larger length palindrome
+ *   corresponding to the current center(s).
+ *
+ * - Eventually, expansion stops when:
+ *     → characters no longer match
+ *     → or indices go out of bounds
+ *
+ * - At this point:
+ *
+ *     left + 1
+ *     right - 1
+ *
+ *   correspond to the start and end indices of the
+ *   longest palindrome found for the current center(s).
+ *
+ * - We compare this palindrome with the best palindrome
+ *   found so far and update the answer if needed.
+ *
+ * ----------------------------------------------------------
+ *
+ * Dry Run:
+ *
+ * Example:
+ * str = "aabbaa"
+ *
+ * ==========================================================
+ * Center = 0 ('a')
+ *   Odd:  "a"
+ *   Even: "aa"
+ *
+ *   Best so far → "aa"
+ *
+ * ==========================================================
+ * Center = 1 ('a')
+ *   Odd:  "a"
+ *   Even: ❌
+ *
+ *   Best so far → "aa"
+ *
+ * ==========================================================
+ * Center = 2 ('b')
+ *   Odd:  "b"
+ *   Even: "bb" → "abba" → "aabbaa"
+ *
+ *   Best so far → "aabbaa"
+ *
+ * ==========================================================
+ * Center = 3 ('b')
+ *   Odd:  "b"
+ *   Even: ❌
+ *
+ *   Best so far → "aabbaa"
+ *
+ * ==========================================================
+ * Center = 4 ('a')
+ *   Odd:  "a"
+ *   Even: "aa"
+ *
+ *   Best so far → "aabbaa"
+ *
+ * ==========================================================
+ * Center = 5 ('a')
+ *   Odd:  "a"
+ *   Even: ❌
+ *
+ *   Best so far → "aabbaa"
+ *
+ * ----------------------------------------------------------
+ *
+ * Final longest palindrome: "aabbaa"
+ *     
+ */
 class Solution {
     public String longestPalindrome(String str) {
-        String maxLengthSubstring = "";
+        int bestStart = 0;
+        int bestEnd = 0;
 
         for (int center = 0; center < str.length(); center++) {
-            String palindrome1 = expandAroundCenter(str, center, center);
-            String palindrome2 = expandAroundCenter(str, center, center + 1);
+            int[] bestOddBounds = expandAroundCenter(str, center, center);
+            int[] bestEvenBounds = expandAroundCenter(str, center, center + 1);
 
-            if (palindrome1.length() > maxLengthSubstring.length()) {
-                maxLengthSubstring = palindrome1;
-            }
+            int oddLen = bestOddBounds[1] - bestOddBounds[0] + 1;
+            int evenLen = bestEvenBounds[1] - bestEvenBounds[0] + 1;
 
-            if (palindrome2.length() > maxLengthSubstring.length()) {
-                maxLengthSubstring = palindrome2;
-            }
-        }
+            int maxLengthSoFar = bestEnd - bestStart + 1;
 
-        return maxLengthSubstring;
-    }
-
-    private String expandAroundCenter(String str, int start, int end) {
-        while ((start >= 0 && end < str.length()) && str.charAt(start) == str.charAt(end)) {
-            start--;
-            end++;
-        }
-
-        return str.substring(start + 1, end);
-    }
-}
-
-
-//Optimal Implementation
-
-class Solution {
-    public String longestPalindrome(String str) {
-        int bestStart = 0, bestEnd = 0;
-
-        for (int center = 0; center < str.length(); center++) {
-            int[] oddPalindrome = expandAroundCenter(str, center, center);
-            int[] evenPalindrome = expandAroundCenter(str, center, center + 1);
-
-            if ((oddPalindrome[1] - oddPalindrome[0]) > (bestEnd - bestStart)) {
-                bestStart = oddPalindrome[0];
-                bestEnd = oddPalindrome[1];
-            }
-
-            if ((evenPalindrome[1] - evenPalindrome[0]) > (bestEnd - bestStart)) {
-                bestStart = evenPalindrome[0];
-                bestEnd = evenPalindrome[1];
+            if (oddLen > evenLen && oddLen > maxLengthSoFar) {
+                bestStart = bestOddBounds[0];
+                bestEnd = bestOddBounds[1];
+            } else if (evenLen > oddLen && evenLen > maxLengthSoFar) {
+                bestStart = bestEvenBounds[0];
+                bestEnd = bestEvenBounds[1];
             }
         }
 
         return str.substring(bestStart, bestEnd + 1);
     }
 
-    private int[] expandAroundCenter(String str, int start, int end) {
-        while ((start >= 0 && end < str.length()) && str.charAt(start) == str.charAt(end)) {
-            start--;
-            end++;
+    private int[] expandAroundCenter(String str, int left, int right) {
+        while ((left >= 0 && right < str.length()) && str.charAt(left) == str.charAt(right)) {
+            left--;
+            right++;
         }
 
-        return new int[] { start + 1, end - 1 };
+        return new int[] { left + 1, right - 1 };
     }
 }
 
